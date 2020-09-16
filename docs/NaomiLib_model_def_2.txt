@@ -10,7 +10,7 @@ Address	"Length (hex)"	Description	Value
 0x8     08      "ID 1"
 010     08      "ID 2" 
 
-0x18    50	"Mesh1 instructions"	
+0x18    50	"Mesh 1 instructions"	
 0x18    08      "Mesh 1 Rendering settings" 
 0x18    01      "Ambient lighting (2C use / 3C don't use)"
 0x1B    01	"Transparency ( 80 Don't use / 82 Use with filter / 83 use without filter) "	
@@ -23,9 +23,10 @@ Address	"Length (hex)"	Description	Value
 0x52	02	"BLUE"
 
 0x64	02	"Mesh 1 Vertex data lenght"
-0x68	08	"Mesh 1 Vertex instructions"
-0x68	01	"Mesh 1 Type of strip ( X1 Draw both strip faces / X2 Draw only front)"	
-0x6C	01	"Mesh 1 Total Vertex
+
+0x68	08	"Polygon instructions"
+0x68	01	"Polygon type ( X1 Draw both faces / X2 Draw only front)"	
+0x6C	01	"Polygon header, total vertex of polygon) 
 
 Vertex Type A:
 
@@ -59,10 +60,12 @@ Case A: The model is finished , there is an end string:
 0x4    02    "total model vertex"
 0x6    02    "00 00" fixed string
 
-Case B: Another mesh is appended, starting with another "Mesh instructions"
+Case B: Another mesh is appended, starting with "Mesh instructions"
 
 _______
 
 Notes:
 
 If you are using this for your projects, give due credit!
+
+

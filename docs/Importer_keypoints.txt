@@ -1,0 +1,16 @@
+As final goal and basic logic, it should perform these operations:
+
+1) Read float at 0x64 (LE 4 bytes long), to obtain Mesh 1 lenght
+
+2) Skip float at 0x68 (LE 4 bytes long, it's a game parameter)
+
+3) Read float at 0x6C (LE 4 bytes long) to know how many vertex the following polygon is composed by
+
+4) **!Check!** From here starts good old vertex data coming in 2 flavours:
+
+"Type A"  8 floats: X,Y,Z,Xn,Yn,Zn,U,V (LE 4 bytes long each)
+"Type B"  2 floats: TypeB String ( XX XX FF 5F), pointer* (LE 4 bytes long)   *real offset is calculated as: Type B offset - (FFFFFFFF - pointer)
+
+5) After the reaching a polygon's end (just after its vertex U/V information), if within mesh 1's lenght, it immediately follows a new polygon instruction and vertex data.
+
+6) Upon the end of mesh 1 lenght, it's either done or follows another mesh by skipping 0x4C bytes to find yourself just at new mesh lenght.
