@@ -1,3 +1,6 @@
 *.directory
-_*
 
+_template
+
+__pycache__
+src/__pycache__/
