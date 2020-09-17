@@ -40,6 +40,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
     #nlfile.seek(0x68)
     nlfile.seek(0x64)
     mesh_end_offset = read_uint32_buff() + 0x64
+    print("MESH END offset START:", mesh_end_offset)
 
     meshes = list()
     mesh_faces = list()
@@ -49,8 +50,12 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
     while nlfile.read(0x4) != b'\x00\x00\x00\x00':
 
         if m > 0: # execute only after first loop
-            nlfile.seek(0x4C, 0x1)
-            mesh_end_offset = read_uint32_buff() + nlfile.tell()
+            print(nlfile.tell())
+            nlfile.seek(0x4C-0x4, 0x1)
+            print(nlfile.tell())
+            m_length = read_uint32_buff()
+            mesh_end_offset = m_length + nlfile.tell()
+            print("MESH END offset m > 0:", mesh_end_offset)
 
         faces_vertex = list()
         faces_index = list()
@@ -58,10 +63,16 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
         f = 0
         vertex_index_last = 0
         while nlfile.tell() < mesh_end_offset:
+            mult = False
 
             if f > 0 or (f == 0 and m > 0): # execute this only after the first loop and during the first loop when m > 0
-                nlfile.read(0x4) # some game internal value
+                face_type = nlfile.read(0x4) # some game internal value
+                if face_type == b'\x6A\x00\x00\x00': # for some reason this works.....
+                    mult = True                    
             n_vertex_face = read_uint32_buff() # number of vertices for this face
+            if mult:
+                n_vertex_face *= 3#
+                print("doubling number of vertices")
             print(n_vertex_face)
             
 
