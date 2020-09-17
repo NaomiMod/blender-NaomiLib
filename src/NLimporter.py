@@ -28,77 +28,159 @@ xVal = 0
 yVal = 1    
 zVal = 2
 
-def parse_nl(nl_bytes: bytes) -> list:
+def parse_nl(nl_bytes: bytes) -> (list, list, list):
     nlfile = BytesIO(nl_bytes)
 
-    read_float_buff = lambda: struct.unpack("<f", nlfile.read(4))[0]
-    read_uint32_buff = lambda: struct.unpack("<I", nlfile.read(4))[0]
+    read_float_buff = lambda: struct.unpack("<f", nlfile.read(0x4))[0]
+    read_uint32_buff = lambda: struct.unpack("<I", nlfile.read(0x4))[0]
+    read_sint32_buff = lambda: struct.unpack("<i", nlfile.read(0x4))[0]
 
-    if nlfile.read(8) != magic_naomilib:
+    if nlfile.read(0x8) != magic_naomilib:
         raise TypeError("ERROR: This is not a NaomiLib file!")
         return {'CANCELLED'}        
 
-    nlfile.seek(0x68)
+    #nlfile.seek(0x68)
+    nlfile.seek(0x64)
+    mesh_end_offset = read_uint32_buff() + 0x64
 
     meshes = list()
-    faces = list()
-    numMeshes = 5 # this is always 5 (?)
+    mesh_faces = list()
 
-    for n in range(numMeshes):
-    
-        nlfile.read(4) # unused
-        n_total_vertex = read_uint32_buff()
+    m = 0
+    # while not EOF
+    while nlfile.read(0x4) != b'\x00\x00\x00\x00':
 
-        print(n_total_vertex)
+        if m > 0: # execute only after first loop
+            nlfile.seek(0x4C, 0x1)
+            mesh_end_offset = read_uint32_buff() + nlfile.tell()
 
-        vertex = list()
-        normal = list()
-        texture_uv = list()
-        
-        tmp = list()
-        for _ in range(n_total_vertex):
-            vertex.append( Vector( struct.unpack("<fff", nlfile.read(12)) ) )
-            normal.append( Vector( struct.unpack("<fff", nlfile.read(12)) ) )
-            texture_uv.append( Vector( struct.unpack("<ff", nlfile.read(8)) ) )
+        faces_vertex = list()
+        faces_index = list()
 
-        #print(vertex)
-        #print(normal)
-        #print(texture_uv)
+        f = 0
+        vertex_index_last = 0
+        while nlfile.tell() < mesh_end_offset:
 
-        print("current position:", nlfile.tell())
-        
+            if f > 0: # execute this only after the first loop
+                nlfile.read(0x4) # some game internal value
+            n_vertex_face = read_uint32_buff() # number of vertices for this face
+            print(n_vertex_face)
+            
+
+            vertex = list()
+            normal = list()
+            texture_uv = list()
+            
+            for _ in range(n_vertex_face):
+                # check if Type A or Type B vertex
+                entry_pos = nlfile.tell()
+                nlfile.seek(0x2, 0x1)
+                if nlfile.read(0x2) == b'\xFF\x5F':
+                    type_b = True
+                    pointer_offset = read_sint32_buff()
+                    entry_pos = nlfile.tell()
+                    nlfile.seek(pointer_offset, 0x1)
+                else:
+                    type_b = False
+                    nlfile.seek(entry_pos, 0x0)
+            
+                vertex.append( struct.unpack("<fff", nlfile.read(0xC)) )
+                normal.append( struct.unpack("<fff", nlfile.read(0xC)) )
+                texture_uv.append( struct.unpack("<ff", nlfile.read(0x8)) )
+
+                if type_b: nlfile.seek(entry_pos, 0x0)
+
+            #print(vertex)
+            #print(normal)
+            #print(texture_uv)
+
+            print("current position:", nlfile.tell())
+            
+            faces_vertex.append( {
+                'point': vertex,
+                'normal': normal,
+                'texture': texture_uv
+            } )
+
+            ## this idea doesn't work at all :(((
+            #faces_index.append( [*range(vertex_index_last, n_vertex_face+vertex_index_last)] )
+            
+            for j in range(n_vertex_face-2):
+                i = j + vertex_index_last
+                x = i
+            
+                if (i % 2 == 1):
+                    y = i + 1
+                    z = i + 2
+                else:
+                    y = i + 2
+                    z = i + 1
+                
+                faces_index.append( [x, y, z] )
+
+            f += 1
+            vertex_index_last += n_vertex_face
+
+        #print(meshes[4]['vertex'][-1])
+        print("number of faces found:", f)
+
         meshes.append( {
-            'vertex': vertex,
-            'normal': normal,
-            'texture': texture_uv
+            'face_vertex': faces_vertex,
+            'face_index': faces_index
         } )
 
-        faces.append(list())
-        for i in range(n_total_vertex-2):
-            x = i
+        mesh_faces.append(faces_index)
 
-            if (i % 2 == 1):
-                y = i + 1
-                z = i + 2
-            else:
-                y = i + 2
-                z = i + 1
-            
-            faces[n].append( [x, y, z] )
+        m += 1
 
-    #print(meshes[4]['vertex'][-1])
+    # reorganize vertices into one array
+    mesh_vertices = list()
+    mesh_uvs = list()
+    for mesh in meshes:
+        points = list()
+        textures = list()
 
-    ### structure
-    # meshes[mesh_index][vertex|normal|texure][index][xVal|yVal|zVal]
+        for face in mesh['face_vertex']:
+            for point in face['point']:
+                # swap Y and Z axis
+                points.append( Vector((point[xVal], point[zVal], point[yVal])) )
+            for texture in face['texture']:
+                textures.append( Vector(texture) )
+
+        mesh_vertices.append(points)
+        mesh_uvs.append(textures)
+
+    
+    print("number of meshes found:", m)
+
+
+    #print(meshes[0]['face_vertex'][0]['point'][1])
+    #print(mesh_vertices)
+    #print(faces_index)
+    #print(mesh_uvs)
+
+    #### structure
+    # meshes[index][face_vertex|face_index]
+    # meshes[index][face_vertex][index][point|normal|texture][index][xVal|yVal|zVal]
+    # meshes[index][face_index][index][vertex_selection]
+    #
+    # mesh_vertices[mesh_index][vertex_index][xVal|yVal|zVal]
+    # mesh_uvs[mesh_index][uv_index][xVal|yVal]
+    # mesh_faces[mesh_index][face_index][0|1|2]
+    ####
+
+    # this is old shit (already lol)
+    # meshes[mesh_index][point|normal|texure][index][xVal|yVal|zVal]
     # faces[mesh_index][index][xVal|yVal|zVal]
 
-    return meshes, faces
+    return mesh_vertices, mesh_uvs, mesh_faces, meshes
 
 
 ########################
 # blender specific code
 ########################
 
+## this is not in use
 def add_object(mesh_name: str, object_name: str, verts: list(), faces: list()):
     scale_x = 1
     scale_y = 1
@@ -145,32 +227,34 @@ def main_function_import_file(self, filename: str):
 
     print(filename)
 
-    try:
-        meshes, faces = parse_nl(NL)
-    except TypeError as e:
-        self.report({'ERROR'}, str(e))
+    #try:
+    mesh_vertex, mesh_uvs, faces, meshes = parse_nl(NL)
+    #except TypeError as e:
+    #    self.report({'ERROR'}, str(e))
 
     print("meshes", len(meshes))
 
     for i, mesh in enumerate(meshes):
-        print("mesh", i, mesh['vertex'])
-        print("uv", i, mesh['texture'])
+        #print("mesh", i, mesh['vertex'])
+        #print("uv", i, mesh['texture'])
         new_mesh = bpy.data.meshes.new(name=f"mesh_{i}")
-        new_mesh.uv_layers.new(do_init=True)
+        new_mesh.uv_layers.new(do_init=True) 
         
-        new_mesh.from_pydata(mesh['vertex'], list(), faces[i])
+        #print("MESH:", mesh['face_vertex'])
+
+        new_mesh.from_pydata(mesh_vertex[i], list(), faces[i])
         new_mesh.validate(verbose=True)
 
-        ### add UV coords
+        #### add UV coords
         for p, polygon in enumerate(new_mesh.polygons):
-            for l, index in enumerate(polygon.loop_indices):
-                #new_mesh.uv_layers[0].data[index].uv = Vector( (mesh['texture'][polygon.index][xVal], 1 - mesh['texture'][polygon.index][yVal]) )
-                new_mesh.uv_layers[0].data[index].uv = Vector( (mesh['texture'][faces[i][p][l]][xVal], 1 - mesh['texture'][faces[i][p][l]][yVal]) )
+            for l, index in enumerate(polygon.loop_indices):                
+                new_mesh.uv_layers[0].data[index].uv = Vector( (mesh_uvs[i][ faces[i][p][l] ][xVal], 1 - mesh_uvs[i][ faces[i][p][l] ][yVal]) )
 
-        # this is nonsense
+        # this is absolute fucking nonsense
         #for j, uv in enumerate(mesh['texture']):
         #    print("uv", uv)
         #    new_mesh.uv_layers[0].data[j].uv = Vector( (uv[xVal], 1 - uv[yVal]) )
+
 
         # create object out of mesh
         new_object = bpy.data.objects.new(f"object_{i}", new_mesh)
