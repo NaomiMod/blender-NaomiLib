@@ -59,7 +59,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
         vertex_index_last = 0
         while nlfile.tell() < mesh_end_offset:
 
-            if f > 0: # execute this only after the first loop
+            if f > 0 or (f == 0 and m > 0): # execute this only after the first loop and during the first loop when m > 0
                 nlfile.read(0x4) # some game internal value
             n_vertex_face = read_uint32_buff() # number of vertices for this face
             print(n_vertex_face)
