@@ -16,7 +16,7 @@ import importlib
 from . import NLimporter as NLi
 
 from bpy.props import StringProperty, BoolProperty
-# ImportHelper is a helper class, defines filename and
+# ImportHelper is a helper class, defines filename and extention
 from bpy_extras.io_utils import ImportHelper, path_reference_mode
 
 importlib.reload(NLimporter)
@@ -36,8 +36,7 @@ def import_nl(self, context, filepath: str, bCleanup: bool):
     return ret
 
 class ImportNL(bpy.types.Operator, ImportHelper):
-    """Import a NaomiLib file"""
-    None
+    """Import a NaomiLib file"""    
 
     bl_idname = "import_scene.naomilib"
     bl_label = "Import NaomiLib"
