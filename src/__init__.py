@@ -17,7 +17,6 @@ from . import NLimporter as NLi
 
 from bpy.props import StringProperty, BoolProperty
 # ImportHelper is a helper class, defines filename and
-# invoke() function which calls the file selector.
 from bpy_extras.io_utils import ImportHelper, path_reference_mode
 
 importlib.reload(NLimporter)

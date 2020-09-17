@@ -18,8 +18,6 @@ from mathutils import Vector, Matrix
 
 magic_naomilib = b'\x01\x00\x00\x00\x01\x00\x00\x00'
 
-empty_size = 0.08
-
 scale_x = 1
 scale_y = 1
 scale_z = 1
@@ -152,12 +150,11 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
 
     
     print("number of meshes found:", m)
-
-
     #print(meshes[0]['face_vertex'][0]['point'][1])
     #print(mesh_vertices)
     #print(faces_index)
     #print(mesh_uvs)
+
 
     #### structure
     # meshes[index][face_vertex|face_index]
@@ -169,39 +166,12 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
     # mesh_faces[mesh_index][face_index][0|1|2]
     ####
 
-    # this is old shit (already lol)
-    # meshes[mesh_index][point|normal|texure][index][xVal|yVal|zVal]
-    # faces[mesh_index][index][xVal|yVal|zVal]
-
     return mesh_vertices, mesh_uvs, mesh_faces, meshes
 
 
 ########################
 # blender specific code
 ########################
-
-## this is not in use
-def add_object(mesh_name: str, object_name: str, verts: list(), faces: list()):
-    scale_x = 1
-    scale_y = 1
-    
-    #verts = [
-    #    Vector((-1 * scale_x, 1 * scale_y, 0)),
-    #    Vector((1 * scale_x, 1 * scale_y, 0)),
-    #    Vector((1 * scale_x, -1 * scale_y, 0)),
-    #    Vector((-1 * scale_x, -1 * scale_y, 0)),
-    #]
-    #faces = [[0, 1, 2, 3]]
-    edges = []
-
-
-    mesh = bpy.data.meshes.new(name=mesh_name)
-    mesh.from_pydata(verts, edges, faces)
-    mesh.validate(verbose=True)
-
-
-    new_object = bpy.data.objects.new(object_name, mesh)
-    bpy.context.collection.objects.link(new_object)
 
 def cleanup():
     for item in bpy.data.objects:
