@@ -1,13 +1,13 @@
 bl_info = {
     "name" : "NaomiLib for Blender",
     "author" : "zocker_160",
-    "description" : "addon for importing and exporting NaomiLib bin files",
+    "description" : "addon for importing NaomiLib bin files",
     "blender" : (2, 90, 0),
-    "version" : (0, 1),
+    "version" : (0, 2),
     "location" : "File > Import",
-    "warning" : "only import is supported for now",
+    "warning" : "only import is supported",
     "category" : "Import",
-    "tracker_url": ""
+    "tracker_url": "https://github.com/zocker-160/blender-NaomiLib"
 }
 
 import bpy
