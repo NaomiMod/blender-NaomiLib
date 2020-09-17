@@ -72,7 +72,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
             n_vertex_face = read_uint32_buff() # number of vertices for this face
             if mult:
                 n_vertex_face *= 3#
-                print("doubling number of vertices")
+                print("triple number of vertices")
             print(n_vertex_face)
             
 
