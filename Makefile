@@ -1,5 +1,5 @@
 ADDON_DIR=./src
-ZIP_NAME="NaomiLib-Blender_04.zip"
+ZIP_NAME="NaomiLib-Blender_05.zip"
 
 addon:
 	mkdir -p ${ADDON_DIR}/addon/io_scene_nl
