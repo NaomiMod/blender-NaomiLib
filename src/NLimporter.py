@@ -16,11 +16,10 @@ from mathutils import Vector, Matrix
 # original code
 #############################
 
-magic_naomilib = [ b'\x01\x00\x00\x00\x01\x00\x00\x00', b'\x01\x00\x00\x00\x03\x00\x00\x00' ]
-
-scale_x = 1
-scale_y = 1
-scale_z = 1
+magic_naomilib = [ 
+    b'\x01\x00\x00\x00\x01\x00\x00\x00', 
+    b'\x01\x00\x00\x00\x03\x00\x00\x00',
+]
 
 xVal = 0
 yVal = 1
