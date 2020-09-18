@@ -1,6 +1,8 @@
 *.directory
+*.zip
 
 _template
+_samples
 
 __pycache__
 src/__pycache__/
