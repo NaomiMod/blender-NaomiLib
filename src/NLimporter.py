@@ -67,7 +67,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
 
             if f > 0 or (f == 0 and m > 0): # execute this only after the first loop and during the first loop when m > 0
                 face_type = nlfile.read(0x4) # some game internal value
-                if face_type == b'\x6A\x00\x00\x00': # for some reason this works.....
+                if face_type == b'\x6A\x00\x00\x00' or face_type == b'\x69\x00\x00\x00': # check for 6A and 69 types
                     mult = True                    
             n_vertex_face = read_uint32_buff() # number of vertices for this face
             if mult:
