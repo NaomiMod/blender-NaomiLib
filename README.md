@@ -6,7 +6,7 @@
 
 ## How to install
 
-- download latest release from the release page
+- download latest release from the [release](https://github.com/zocker-160/blender-NaomiLib/releases) page
 - intall zip as addon in Blender in the preferences
 
 ## How to build
