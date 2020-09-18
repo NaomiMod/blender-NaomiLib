@@ -71,7 +71,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
                     mult = True                    
             n_vertex_face = read_uint32_buff() # number of vertices for this face
             if mult:
-                n_vertex_face *= 3#
+                n_vertex_face *= 3 # for some reason this works.....
                 print("triple number of vertices")
             print(n_vertex_face)
             
@@ -111,7 +111,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
                 'texture': texture_uv
             } )
 
-            ## this idea doesn't work at all :(((
+            ## this idea doesn't work at all :(
             #faces_index.append( [*range(vertex_index_last, n_vertex_face+vertex_index_last)] )
             
             for j in range(n_vertex_face-2):
@@ -167,7 +167,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
     #print(mesh_uvs)
 
 
-    #### structure
+    #### data structure
     # meshes[index][face_vertex|face_index]
     # meshes[index][face_vertex][index][point|normal|texture][index][xVal|yVal|zVal]
     # meshes[index][face_index][index][vertex_selection]
@@ -228,17 +228,13 @@ def main_function_import_file(self, filename: str):
 
         #### add UV coords
         for p, polygon in enumerate(new_mesh.polygons):
-            for l, index in enumerate(polygon.loop_indices):                
-                new_mesh.uv_layers[0].data[index].uv = Vector( (mesh_uvs[i][ faces[i][p][l] ][xVal], 1 - mesh_uvs[i][ faces[i][p][l] ][yVal]) )
-
-        # this is absolute fucking nonsense
-        #for j, uv in enumerate(mesh['texture']):
-        #    print("uv", uv)
-        #    new_mesh.uv_layers[0].data[j].uv = Vector( (uv[xVal], 1 - uv[yVal]) )
-
+            for l, index in enumerate(polygon.loop_indices):
+                new_mesh.uv_layers[0].data[index].uv.x = mesh_uvs[i][ faces[i][p][l] ][xVal]
+                new_mesh.uv_layers[0].data[index].uv.y = 1 - mesh_uvs[i][ faces[i][p][l] ][yVal]
 
         # create object out of mesh
         new_object = bpy.data.objects.new(f"object_{i}", new_mesh)
+
         #print("new object", new_object.name)
 
         # link object to world collection
