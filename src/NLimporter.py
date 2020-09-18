@@ -16,14 +16,14 @@ from mathutils import Vector, Matrix
 # original code
 #############################
 
-magic_naomilib = b'\x01\x00\x00\x00\x01\x00\x00\x00'
+magic_naomilib = [ b'\x01\x00\x00\x00\x01\x00\x00\x00', b'\x01\x00\x00\x00\x03\x00\x00\x00' ]
 
 scale_x = 1
 scale_y = 1
 scale_z = 1
 
 xVal = 0
-yVal = 1    
+yVal = 1
 zVal = 2
 
 def parse_nl(nl_bytes: bytes) -> (list, list, list):
@@ -33,7 +33,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
     read_uint32_buff = lambda: struct.unpack("<I", nlfile.read(0x4))[0]
     read_sint32_buff = lambda: struct.unpack("<i", nlfile.read(0x4))[0]
 
-    if nlfile.read(0x8) != magic_naomilib:
+    if nlfile.read(0x8) not in magic_naomilib:
         raise TypeError("ERROR: This is not a NaomiLib file!")
         return {'CANCELLED'}        
 
