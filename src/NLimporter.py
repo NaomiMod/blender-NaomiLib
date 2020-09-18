@@ -67,20 +67,25 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
 
             if f > 0 or (f == 0 and m > 0): # execute this only after the first loop and during the first loop when m > 0
                 face_type = nlfile.read(0x4) # some game internal value
+                print(face_type)
                 if face_type == b'\x6A\x00\x00\x00' or face_type == b'\x69\x00\x00\x00': # check for 6A and 69 types
-                    mult = True                    
-            n_vertex_face = read_uint32_buff() # number of vertices for this face
+                    mult = True
+                else:
+                    mult = False
+            n_face = read_uint32_buff() # number of faces for this chunk (depending on the type it needs either one or three vertices / face)
             if mult:
-                n_vertex_face *= 3 # for some reason this works.....
+                n_vertex = n_face * 3                
                 print("triple number of vertices")
-            print(n_vertex_face)
+            else:
+                n_vertex = n_face
+            print(n_vertex)
             
 
             vertex = list()
             normal = list()
             texture_uv = list()
             
-            for _ in range(n_vertex_face):
+            for _ in range(n_vertex):
                 # check if Type A or Type B vertex
                 entry_pos = nlfile.tell()
                 nlfile.seek(0x2, 0x1)
@@ -114,21 +119,33 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
             ## this idea doesn't work at all :(
             #faces_index.append( [*range(vertex_index_last, n_vertex_face+vertex_index_last)] )
             
-            for j in range(n_vertex_face-2):
-                i = j + vertex_index_last
-                x = i
-            
-                if (i % 2 == 1):
+            if mult:
+                for j in range(n_face):
+                    
+                    x = vertex_index_last + j*3
+                    y = vertex_index_last + j*3 + 1
+                    z = vertex_index_last + j*3 + 2
+
+                    faces_index.append( [x, y, z] )
+            else:
+                for j in range(n_vertex-2):
+                    i = j + vertex_index_last
+                    x = i
+                
                     y = i + 1
                     z = i + 2
-                else:
-                    y = i + 2
-                    z = i + 1
+
+                    #if (i % 2 == 1):
+                    #    y = i + 1
+                    #    z = i + 2
+                    #else:
+                    #    y = i + 2
+                    #    z = i + 1
                 
-                faces_index.append( [x, y, z] )
+                    faces_index.append( [x, y, z] )
 
             f += 1
-            vertex_index_last += n_vertex_face
+            vertex_index_last += n_vertex
 
         #print(meshes[4]['vertex'][-1])
         print("number of faces found:", f)
@@ -163,7 +180,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
     print("number of meshes found:", m)
     #print(meshes[0]['face_vertex'][0]['point'][1])
     #print(mesh_vertices)
-    #print(faces_index)
+    print(faces_index)
     #print(mesh_uvs)
 
 
