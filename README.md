@@ -8,7 +8,7 @@ Shenmue 2 (SEGA DREAMCAST)
 
 Dead or Alive 2 Ultimate (SEGA DREAMCAST)
 
-MONKEY BALL (ARCADE NAOMI - GDS-0008)
+Monkey Ball (ARCADE NAOMI - GDS-0008)
 
 ## How to install
 
