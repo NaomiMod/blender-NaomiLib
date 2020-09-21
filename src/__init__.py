@@ -1,11 +1,11 @@
 bl_info = {
-    "name" : "NaomiLib for Blender",
+    "name" : "NaomiLib importer for Blender",
     "author" : "zocker_160",
     "description" : "addon for importing NaomiLib bin files",
     "blender" : (2, 90, 0),
     "version" : (0, 5),
     "location" : "File > Import",
-    "warning" : "only import is supported",
+    "warning" : "",
     "category" : "Import",
     "tracker_url": "https://github.com/zocker-160/blender-NaomiLib"
 }
