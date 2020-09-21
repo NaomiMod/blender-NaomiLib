@@ -35,7 +35,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
     read_sint32_buff = lambda: struct.unpack("<i", nlfile.read(0x4))[0]
 
     if nlfile.read(0x8) not in magic_naomilib:
-        raise TypeError("ERROR: This is not a NaomiLib file!")
+        raise TypeError("ERROR: This is not a supported NaomiLib file!")
         return {'CANCELLED'}        
 
     #nlfile.seek(0x68)
