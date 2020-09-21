@@ -50,12 +50,13 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
     # while not EOF
     while nlfile.read(0x4) != b'\x00\x00\x00\x00':
 
-        if m > 0: # execute only after first loop
+        if m == 0: # first loop needs special treatment
+            nlfile.seek(nlfile.tell()-0x4, 0x0)
+        else:
             print(nlfile.tell())
             nlfile.seek(0x4C-0x4, 0x1)
             print(nlfile.tell())
-            m_length = read_uint32_buff()
-            mesh_end_offset = m_length + nlfile.tell()
+            mesh_end_offset = read_uint32_buff() + nlfile.tell()
             print("MESH END offset m > 0:", mesh_end_offset)
 
         faces_vertex = list()
@@ -66,13 +67,13 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
         while nlfile.tell() < mesh_end_offset:
             mult = False
 
-            if f > 0 or (f == 0 and m > 0): # execute this only after the first loop and during the first loop when m > 0
-                face_type = nlfile.read(0x4) # some game internal value
-                print(face_type)
-                if face_type in [ b'\x6A\x00\x00\x00', b'\x69\x00\x00\x00', b'\x0A\x00\x00\x00' ]: # check for 6A , 69 , 0A types
-                    mult = True
-                else:
-                    mult = False
+            face_type = nlfile.read(0x4) # some game internal value
+            print(face_type)
+            if face_type in [ b'\x6A\x00\x00\x00', b'\x69\x00\x00\x00', b'\x0A\x00\x00\x00' ]: # check for 6A, 69, 0A types
+                mult = True
+            else:
+                mult = False
+
             n_face = read_uint32_buff() # number of faces for this chunk (depending on the type it needs either one or three vertices / face)
             if mult:
                 n_vertex = n_face * 3                
