@@ -9,6 +9,7 @@
 | Dead or Alive 2 Ultimate         | SEGA DREAMCAST          |
 | Monkey Ball                      | ARCADE NAOMI - GDS-0008 |
 | 18 Wheeler: American Pro Trucker | SEGA DREAMCAST          |
+| Power Stone 2 v1.000             | SEGA DREAMCAST          |
 
 ## How to install
 
