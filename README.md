@@ -10,6 +10,8 @@ Dead or Alive 2 Ultimate (SEGA DREAMCAST)
 
 Monkey Ball (ARCADE NAOMI - GDS-0008)
 
+18 Wheeler: American Pro Trucker (SEGA DREAMCAST)
+
 ## How to install
 
 - download latest release from the [release](https://github.com/zocker-160/blender-NaomiLib/releases) page
