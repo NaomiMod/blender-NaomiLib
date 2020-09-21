@@ -2,15 +2,13 @@
 
 ## Supported games
 
-Virtua Tennis (SEGA DREAMCAST)
-
-Shenmue 2 (SEGA DREAMCAST)
-
-Dead or Alive 2 Ultimate (SEGA DREAMCAST)
-
-Monkey Ball (ARCADE NAOMI - GDS-0008)
-
-18 Wheeler: American Pro Trucker (SEGA DREAMCAST)
+| Game                             | Device                  |
+| -------------------------------- | ----------------------- |
+| Virtua Tennis                    | SEGA DREAMCAST          |
+| Shenmue 2                        | SEGA DREAMCAST          |
+| Dead or Alive 2 Ultimate         | SEGA DREAMCAST          |
+| Monkey Ball                      | ARCADE NAOMI - GDS-0008 |
+| 18 Wheeler: American Pro Trucker | SEGA DREAMCAST          |
 
 ## How to install
 
