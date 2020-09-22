@@ -69,7 +69,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
 
             face_type = nlfile.read(0x4) # some game internal value
             print(face_type)
-            if face_type in [ b'\x6A\x00\x00\x00', b'\x69\x00\x00\x00', b'\x0A\x00\x00\x00' , b'\x2A\x00\x00\x00' ]: # check for 6A, 69, 0A ,2A types
+            if face_type in [ b'\x6A\x00\x00\x00', b'\x69\x00\x00\x00', b'\x0A\x00\x00\x00' , b'\x2A\x00\x00\x00' , b'\x4A\x00\x00\x00' ]: # check for 6A, 69, 0A ,2A ,4A types
                 mult = True
             else:
                 mult = False
