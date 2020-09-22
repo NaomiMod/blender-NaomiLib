@@ -4,13 +4,18 @@
 
 | Game                             | Device                  |
 | -------------------------------- | ----------------------- |
-| Virtua Tennis                    | SEGA DREAMCAST          |
-| Shenmue 2                        | SEGA DREAMCAST          |
-| Dead or Alive 2 Ultimate         | SEGA DREAMCAST          |
-| Monkey Ball                      | ARCADE NAOMI - GDS-0008 |
 | 18 Wheeler: American Pro Trucker | SEGA DREAMCAST          |
-| Power Stone 2 v1.000             | SEGA DREAMCAST          |
+| Crazy Taxi 2                     | SEGA DREAMCAST          |
+| Dead or Alive 2 Ultimate         | SEGA DREAMCAST          |
+| Power Stone 2                    | SEGA DREAMCAST          |
+| Shenmue 2                        | SEGA DREAMCAST          |
 | Virtua Fighter 3tb               | SEGA DREAMCAST          |
+| Virtua Tennis                    | SEGA DREAMCAST          |
+| Monkey Ball                      | ARCADE NAOMI - GDS-0008 |
+
+
+
+
 
 ## How to install
 
