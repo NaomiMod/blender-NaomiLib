@@ -12,9 +12,7 @@ from io import BytesIO
 from math import radians
 from mathutils import Vector, Matrix
 
-#############################
-# original code
-#############################
+# static magic numbers and headers
 
 magic_naomilib = [ 
     b'\x01\x00\x00\x00\x01\x00\x00\x00', # Objects Model
@@ -24,9 +22,22 @@ magic_naomilib = [
     b'\x00\x00\x00\x00\x05\x00\x00\x00', # Objects Model 3 - used by F355 Challenge
 ]
 
+triple_face_types = [    # special face types
+    b'\x6A\x00\x00\x00', # 6A
+    b'\x69\x00\x00\x00', # 69
+    b'\x0A\x00\x00\x00', # 0A
+    b'\x2A\x00\x00\x00', # 2A
+    b'\x4A\x00\x00\x00', # 4A
+    b'\xEA\x00\x00\x00', # EA
+]
+
 xVal = 0
 yVal = 1
 zVal = 2
+
+#############################
+# main parse function
+#############################
 
 def parse_nl(nl_bytes: bytes) -> (list, list, list):
     nlfile = BytesIO(nl_bytes)
@@ -70,7 +81,7 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
 
             face_type = nlfile.read(0x4) # some game internal value
             print(face_type)
-            if face_type in [ b'\x6A\x00\x00\x00', b'\x69\x00\x00\x00', b'\x0A\x00\x00\x00' , b'\x2A\x00\x00\x00' , b'\x4A\x00\x00\x00' , b'\xEA\x00\x00\x00' ]: # check for 6A, 69, 0A ,2A ,4A ,EA types
+            if face_type in triple_face_types: # check for triple vertex faces
                 mult = True
             else:
                 mult = False
@@ -220,7 +231,10 @@ def redraw():
         if area.type in ['IMAGE_EDITOR', 'VIEW_3D']:
             area.tag_redraw()
 
-### MAIN function
+########################
+# MAIN function
+########################
+
 def main_function_import_file(self, filename: str):
 
     with open(filename, "rb") as f:
