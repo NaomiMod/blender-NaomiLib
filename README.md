@@ -2,23 +2,24 @@
 
 ## Supported games
 
-| Game                             | Device                  |
-| -------------------------------- | ----------------------- |
-| 18 Wheeler: American Pro Trucker | SEGA DREAMCAST          |
-| Cosmic Smash                     | SEGA DREAMCAST          |
-| Crazy Taxi                       | SEGA DREAMCAST          |
-| Crazy Taxi 2                     | SEGA DREAMCAST          |
-| Dead or Alive 2 Ultimate         | SEGA DREAMCAST          |
-| Ferrari F355 Challenge           | SEGA DREAMCAST          |
-| Fighting Vipers 2                | SEGA DREAMCAST          |
-| Outtrigger                       | SEGA DREAMCAST          |
-| Power Stone 2                    | SEGA DREAMCAST          |
-| Shenmue 2                        | SEGA DREAMCAST          |
-| Virtua Fighter 3tb               | SEGA DREAMCAST          |
-| Virtua Tennis / Power Smash      | SEGA DREAMCAST          |
-| Virtua Tennis 2 / Power Smash 2  | SEGA DREAMCAST          |
-| Monkey Ball                      | ARCADE NAOMI - GDS-0008 |
-| Virtua Tennis / Power Smash      | ARCADE NAOMI - GDS-0011 |
+| Game                                        | Device                  |
+| ------------------------------------------- | ----------------------- |
+| 18 Wheeler: American Pro Trucker            | SEGA DREAMCAST          |
+| Cosmic Smash                                | SEGA DREAMCAST          |
+| Crazy Taxi                                  | SEGA DREAMCAST          |
+| Crazy Taxi 2                                | SEGA DREAMCAST          |
+| Dead or Alive 2 Ultimate                    | SEGA DREAMCAST          |
+| Ferrari F355 Challenge                      | SEGA DREAMCAST          |
+| Fighting Vipers 2                           | SEGA DREAMCAST          |
+| Giant Gram 2000: All-Japan Pro Wrestling 3  | SEGA DREAMCAST          |
+| Outtrigger                                  | SEGA DREAMCAST          |
+| Power Stone 2                               | SEGA DREAMCAST          |
+| Shenmue 2                                   | SEGA DREAMCAST          |
+| Virtua Fighter 3tb                          | SEGA DREAMCAST          |
+| Virtua Tennis / Power Smash                 | SEGA DREAMCAST          |
+| Virtua Tennis 2 / Power Smash 2             | SEGA DREAMCAST          |
+| Monkey Ball                                 | ARCADE NAOMI - GDS-0008 |
+| Virtua Tennis / Power Smash                 | ARCADE NAOMI - GDS-0011 |
 
 
 
