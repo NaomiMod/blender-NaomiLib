@@ -5,6 +5,7 @@
 | Game                             | Device                  |
 | -------------------------------- | ----------------------- |
 | 18 Wheeler: American Pro Trucker | SEGA DREAMCAST          |
+| Cosmic Smash                     | SEGA DREAMCAST          |
 | Crazy Taxi                       | SEGA DREAMCAST          |
 | Crazy Taxi 2                     | SEGA DREAMCAST          |
 | Dead or Alive 2 Ultimate         | SEGA DREAMCAST          |
