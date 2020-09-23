@@ -8,6 +8,7 @@
 | Crazy Taxi                       | SEGA DREAMCAST          |
 | Crazy Taxi 2                     | SEGA DREAMCAST          |
 | Dead or Alive 2 Ultimate         | SEGA DREAMCAST          |
+| Ferrari F355 Challenge           | SEGA DREAMCAST          |
 | Fighting Vipers 2                | SEGA DREAMCAST          |
 | Power Stone 2                    | SEGA DREAMCAST          |
 | Shenmue 2                        | SEGA DREAMCAST          |
