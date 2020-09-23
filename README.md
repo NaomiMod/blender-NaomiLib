@@ -11,6 +11,7 @@
 | Dead or Alive 2 Ultimate                    | SEGA DREAMCAST          |
 | Ferrari F355 Challenge                      | SEGA DREAMCAST          |
 | Fighting Vipers 2                           | SEGA DREAMCAST          |
+| Giant Gram 2000: All-Japan Pro Wrestling 2  | SEGA DREAMCAST          |
 | Giant Gram 2000: All-Japan Pro Wrestling 3  | SEGA DREAMCAST          |
 | Outtrigger                                  | SEGA DREAMCAST          |
 | Power Stone 2                               | SEGA DREAMCAST          |
