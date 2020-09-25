@@ -15,15 +15,20 @@ from mathutils import Vector, Matrix
 # static magic numbers and headers
 
 magic_naomilib = [ 
-    b'\x01\x00\x00\x00\x01\x00\x00\x00', # Objects Model
-    b'\x01\x00\x00\x00\x02\x00\x00\x00', # Unknown
-    b'\x01\x00\x00\x00\x03\x00\x00\x00', # Level Models
-    b'\x01\x00\x00\x00\x05\x00\x00\x00', # Objects Model 2
-    b'\x00\x00\x00\x00\x05\x00\x00\x00', # Objects Model 3 - used by F355 Challenge
+    b'\x01\x00\x00\x00\x01\x00\x00\x00', # Objects Model 1
+    b'\x01\x00\x00\x00\x02\x00\x00\x00', # Unknown Objects Model 2
+    b'\x01\x00\x00\x00\x03\x00\x00\x00', # Objects Model 3 - Generally Levels
+    b'\x01\x00\x00\x00\x05\x00\x00\x00', # Objects Model 5
+    b'\x00\x00\x00\x00\x05\x00\x00\x00', # Objects Model 5 Type B - used by F355 Challenge
 ]
 
 magic_naomilib_big = [
-    b'\x00\x00\x00\x01\x00\x00\x00\x05', # Super Monkey Ball
+   	b'\x00\x00\x00\x01\x00\x00\x00\x01', # Objects Model 1 - used by Super Monkey Ball / GameCube
+	b'\x00\x00\x00\x01\x00\x00\x00\x02', # Unknown Objects Model 2 - used by Super Monkey Ball / GameCube
+	b'\x00\x00\x00\x01\x00\x00\x00\x03', # Objects Model 3 - used by Super Monkey Ball / GameCube
+	b'\x00\x00\x00\x01\x00\x00\x00\x05', # Objects Model 5 - used by Super Monkey Ball / GameCube
+	b'\x00\x00\x00\x00\x00\x00\x00\x05', # Objects Model 5 Type B - used by Super Monkey Ball / GameCube
+
 ]
 
 triple_face_types_little = [    # special face types
