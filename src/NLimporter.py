@@ -22,14 +22,20 @@ magic_naomilib = [
     b'\x00\x00\x00\x00\x05\x00\x00\x00', # Objects Model 3 - used by F355 Challenge
 ]
 
-triple_face_types = [    # special face types
-    b'\x6A\x00\x00\x00', # 6A
-    b'\x69\x00\x00\x00', # 69
-    b'\x0A\x00\x00\x00', # 0A
-    b'\x2A\x00\x00\x00', # 2A
-    b'\x4A\x00\x00\x00', # 4A
-    b'\xEA\x00\x00\x00', # EA
+magic_naomilib_big = [
+    b'\x00\x00\x00\x01\x00\x00\x00\x05', # Super Monkey Ball
 ]
+
+triple_face_types_little = [    # special face types
+    b'\x6A\x00\x00\x00',        # 6A
+    b'\x69\x00\x00\x00',        # 69
+    b'\x0A\x00\x00\x00',        # 0A
+    b'\x2A\x00\x00\x00',        # 2A
+    b'\x4A\x00\x00\x00',        # 4A
+    b'\xEA\x00\x00\x00',        # EA
+]
+
+type_b_vertex_little = b'\xFF\x5F'
 
 xVal = 0
 yVal = 1
@@ -40,15 +46,42 @@ zVal = 2
 #############################
 
 def parse_nl(nl_bytes: bytes) -> (list, list, list):
+    big_endian = False
     nlfile = BytesIO(nl_bytes)
 
-    read_float_buff = lambda: struct.unpack("<f", nlfile.read(0x4))[0]
-    read_uint32_buff = lambda: struct.unpack("<I", nlfile.read(0x4))[0]
-    read_sint32_buff = lambda: struct.unpack("<i", nlfile.read(0x4))[0]
-
-    if nlfile.read(0x8) not in magic_naomilib:
+    _magic = nlfile.read(0x8)
+    if _magic in magic_naomilib_big:
+        big_endian = True
+    elif _magic not in magic_naomilib:
         raise TypeError("ERROR: This is not a supported NaomiLib file!")
-        return {'CANCELLED'}        
+        return {'CANCELLED'}
+
+    if not big_endian:
+        read_float_buff = lambda: struct.unpack("<f", nlfile.read(0x4))[0]
+        read_uint32_buff = lambda: struct.unpack("<I", nlfile.read(0x4))[0]
+        read_sint32_buff = lambda: struct.unpack("<i", nlfile.read(0x4))[0]
+
+        read_point3_buff = lambda: struct.unpack("<fff", nlfile.read(0xC))
+        read_point2_buff = lambda: struct.unpack("<ff", nlfile.read(0x8))
+
+        # assign magics
+        triple_face_types = triple_face_types_little
+        type_b_vertex = type_b_vertex_little
+    else:
+        read_float_buff = lambda: struct.unpack(">f", nlfile.read(0x4))[0]
+        read_uint32_buff = lambda: struct.unpack(">I", nlfile.read(0x4))[0]
+        read_sint32_buff = lambda: struct.unpack(">i", nlfile.read(0x4))[0]
+
+        read_point3_buff = lambda: struct.unpack(">fff", nlfile.read(0xC))
+        read_point2_buff = lambda: struct.unpack(">ff", nlfile.read(0x8))
+
+        # convert all magics to big endian
+        triple_face_types = [ b[::-1] for b in triple_face_types_little ]
+        type_b_vertex = type_b_vertex_little[::-1]
+
+        # cutoff the last 0x10 bytes - not really needed.....
+        #nlfile = BytesIO(nl_bytes[:-0x10])
+    
 
     #nlfile.seek(0x68)
     nlfile.seek(0x64)
@@ -102,9 +135,10 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
             for _ in range(n_vertex):
                 # check if Type A or Type B vertex
                 entry_pos = nlfile.tell()
-                nlfile.seek(0x2, 0x1)
-                if nlfile.read(0x2) == b'\xFF\x5F':
+                if not big_endian: nlfile.seek(0x2, 0x1)
+                if nlfile.read(0x2) == type_b_vertex:
                     type_b = True
+                    if big_endian: nlfile.seek(0x2, 0x1)
                     pointer_offset = read_sint32_buff()
                     entry_pos = nlfile.tell()
                     nlfile.seek(pointer_offset, 0x1)
@@ -112,9 +146,9 @@ def parse_nl(nl_bytes: bytes) -> (list, list, list):
                     type_b = False
                     nlfile.seek(entry_pos, 0x0)
             
-                vertex.append( struct.unpack("<fff", nlfile.read(0xC)) )
-                normal.append( struct.unpack("<fff", nlfile.read(0xC)) )
-                texture_uv.append( struct.unpack("<ff", nlfile.read(0x8)) )
+                vertex.append( read_point3_buff() )
+                normal.append( read_point3_buff() )
+                texture_uv.append( read_point2_buff() )
 
                 if type_b: nlfile.seek(entry_pos, 0x0)
 
