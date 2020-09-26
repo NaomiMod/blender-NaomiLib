@@ -295,58 +295,37 @@ def main_function_import_file(self, filename: str):
 
     print(filename)
 
-    #try:
     mesh_vertex, mesh_uvs, faces, meshes = parse_nl(NL)
-    #except TypeError as e:
-    #    self.report({'ERROR'}, str(e))
 
     return data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=bpy.context.scene.collection)
 
-    print("meshes", len(meshes))
-
-    for i, mesh in enumerate(meshes):
-        #print("mesh", i, mesh['vertex'])
-        #print("uv", i, mesh['texture'])
-        new_mesh = bpy.data.meshes.new(name=f"mesh_{i}")
-        new_mesh.uv_layers.new(do_init=True) 
-        
-        #print("MESH:", mesh['face_vertex'])
-
-        new_mesh.from_pydata(mesh_vertex[i], list(), faces[i])
-        new_mesh.validate(verbose=True)
-
-        #### add UV coords
-        for p, polygon in enumerate(new_mesh.polygons):
-            for l, index in enumerate(polygon.loop_indices):
-                new_mesh.uv_layers[0].data[index].uv.x = mesh_uvs[i][ faces[i][p][l] ][xVal]
-                new_mesh.uv_layers[0].data[index].uv.y = 1 - mesh_uvs[i][ faces[i][p][l] ][yVal]
-
-        # create object out of mesh
-        new_object = bpy.data.objects.new(f"object_{i}", new_mesh)
-
-        #print("new object", new_object.name)
-
-        # link object to world collection
-        bpy.context.collection.objects.link(new_object)
-
-    return True
 
 def main_function_import_archive(self, filename: str):
     main_col = bpy.context.scene.collection
 
     with open(filename, "rb") as f:
-        header_length = struct.unpack("<I", f.read(0x4))[0]
+        read_uint32_buff = lambda: struct.unpack("<I", f.read(0x4))[0]
+        read_uint16_buff = lambda: struct.unpack("<H", f.read(0x2))[0]
+
+        # check for little or big endian
+        t1 = f.read(0x2)
+        t2 = read_uint16_buff()
+        f.seek(0x0)
+        if t1 == b'\x00\x00' and t2 > 1000:
+            read_uint32_buff = lambda: struct.unpack(">I", f.read(0x4))[0]
+
+        header_length = read_uint32_buff()
         num_child_models = ( header_length - 0x8 ) // 0x4
 
-        start_offset = struct.unpack("<I", f.read(0x4))[0]
+        start_offset = read_uint32_buff()
 
         for i in range(num_child_models):
-            end_offset = struct.unpack("<I", f.read(0x4))[0]
+            end_offset = read_uint32_buff()
             st_p = f.tell()
 
             if end_offset == 0:
                 f.seek( header_length + 0x8 )
-                end_offset = struct.unpack("<I", f.read(0x4))[0]
+                end_offset = read_uint32_buff()
 
             f.seek(start_offset)
             mesh_vertex, mesh_uvs, faces, meshes = parse_nl( f.read(end_offset-start_offset) )
