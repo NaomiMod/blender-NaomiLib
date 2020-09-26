@@ -4,8 +4,6 @@ from bpy.types import Operator
 from bpy.props import FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
-import os
-import sys
 import struct
 
 from io import BytesIO
@@ -62,7 +60,6 @@ def parse_nl(nl_bytes: bytes) -> list:
         return {'CANCELLED'}
 
     if not big_endian:
-        read_float_buff = lambda: struct.unpack("<f", nlfile.read(0x4))[0]
         read_uint32_buff = lambda: struct.unpack("<I", nlfile.read(0x4))[0]
         read_sint32_buff = lambda: struct.unpack("<i", nlfile.read(0x4))[0]
 
@@ -73,7 +70,6 @@ def parse_nl(nl_bytes: bytes) -> list:
         triple_face_types = triple_face_types_little
         type_b_vertex = type_b_vertex_little
     else:
-        read_float_buff = lambda: struct.unpack(">f", nlfile.read(0x4))[0]
         read_uint32_buff = lambda: struct.unpack(">I", nlfile.read(0x4))[0]
         read_sint32_buff = lambda: struct.unpack(">i", nlfile.read(0x4))[0]
 
@@ -83,9 +79,6 @@ def parse_nl(nl_bytes: bytes) -> list:
         # convert all magics to big endian
         triple_face_types = [ b[::-1] for b in triple_face_types_little ]
         type_b_vertex = type_b_vertex_little[::-1]
-
-        # cutoff the last 0x10 bytes - not really needed.....
-        #nlfile = BytesIO(nl_bytes[:-0x10])
     
 
     #nlfile.seek(0x68)
@@ -168,9 +161,6 @@ def parse_nl(nl_bytes: bytes) -> list:
                 'normal': normal,
                 'texture': texture_uv
             } )
-
-            ## this idea doesn't work at all :(
-            #faces_index.append( [*range(vertex_index_last, n_vertex_face+vertex_index_last)] )
             
             if mult:
                 for j in range(n_face):
@@ -187,13 +177,6 @@ def parse_nl(nl_bytes: bytes) -> list:
                 
                     y = i + 1
                     z = i + 2
-
-                    #if (i % 2 == 1):
-                    #    y = i + 1
-                    #    z = i + 2
-                    #else:
-                    #    y = i + 2
-                    #    z = i + 1
                 
                     faces_index.append( [x, y, z] )
 
