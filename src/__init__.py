@@ -22,17 +22,17 @@ from bpy_extras.io_utils import ImportHelper, path_reference_mode
 importlib.reload(NLimporter)
 
 
-def import_nl(self, context, filepath: str, bCleanup: bool):
+def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool):
     if bCleanup:
         print("CLEANING UP")
         NLi.cleanup()
 
     ret = False
-    #try:
-    ret = NLi.main_function_import_file(self, filename=filepath)
-    #except TypeError as e:
-    #    self.report({'ERROR'}, str(e))
-    #finally:
+
+    if bArchive:
+        ret = NLi.main_function_import_archive(self, filename=filepath)
+    else:
+        ret = NLi.main_function_import_file(self, filename=filepath)
     return ret
 
 class ImportNL(bpy.types.Operator, ImportHelper):
@@ -55,8 +55,14 @@ class ImportNL(bpy.types.Operator, ImportHelper):
         default=False,
     )
 
+    setting_archive: BoolProperty(
+        name="File is LZ_P archive",
+        description="check this box when the file is an archive",
+        default=False,
+    )
+
     def execute(self, context):
-        if import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup):
+        if import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup, bArchive=self.setting_archive):
             return {'FINISHED'}
         else:
             return {'CANCELLED'}
