@@ -41,10 +41,10 @@ class ImportNL(bpy.types.Operator, ImportHelper):
     bl_idname = "import_scene.naomilib"
     bl_label = "Import NaomiLib"
 
-    filename_ext = ".bin"
+    filename_ext = ".bin",".raw" #.bin or raw supported by SMB
 
     filter_glob: StringProperty(
-        default="*.bin",
+        default="*.bin;*.raw",
         options={'HIDDEN'},
         maxlen=255,  # Max internal buffer length, longer would be clamped.
     )
@@ -70,7 +70,7 @@ class ImportNL(bpy.types.Operator, ImportHelper):
 
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):
-    self.layout.operator(ImportNL.bl_idname, text="NaomiLib (.bin)")
+    self.layout.operator(ImportNL.bl_idname, text="NaomiLib (.bin / .raw)") #.bin or raw supported by SMB
 
 def register():
     bpy.utils.register_class(ImportNL)
