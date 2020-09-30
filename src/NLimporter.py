@@ -331,8 +331,11 @@ def main_function_import_archive(self, filename: str):
             st_p = f.tell()
 
             if end_offset == 0:
-                f.seek( header_length + 0x8 )
+                f.seek( header_length + 0x8 ) # this is not always true, for some models the offset is only 0x4 (**)
                 end_offset = read_uint32_buff()
+                if end_offset < start_offset: # (**)so we need to check for that
+                    f.seek ( header_length + 0x4 ) # (**)and apply a dirty solution, I mean who the fuck cares anyway
+                    end_offset = read_uint32_buff()
 
             f.seek(start_offset)
             print("NEW child start offset:", start_offset)
