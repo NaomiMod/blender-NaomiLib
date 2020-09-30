@@ -15,14 +15,14 @@ import importlib
 
 from . import NLimporter as NLi
 
-from bpy.props import StringProperty, BoolProperty
+from bpy.props import StringProperty, BoolProperty, FloatProperty
 # ImportHelper is a helper class, defines filename and extention
 from bpy_extras.io_utils import ImportHelper, path_reference_mode
 
 importlib.reload(NLimporter)
 
 
-def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool):
+def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fScaling: float):
     if bCleanup:
         print("CLEANING UP")
         NLi.cleanup()
@@ -30,9 +30,9 @@ def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool):
     ret = False
 
     if bArchive:
-        ret = NLi.main_function_import_archive(self, filename=filepath)
+        ret = NLi.main_function_import_archive(self, filename=filepath, scaling=fScaling)
     else:
-        ret = NLi.main_function_import_file(self, filename=filepath)
+        ret = NLi.main_function_import_file(self, filename=filepath, scaling=fScaling)
     return ret
 
 class ImportNL(bpy.types.Operator, ImportHelper):
@@ -61,8 +61,16 @@ class ImportNL(bpy.types.Operator, ImportHelper):
         default=False,
     )
 
+    setting_scaling: FloatProperty(
+        name="Scale",
+        description="scaling factor for all objects to make huge objects smaller",
+        default=1,
+        min=0,
+        max=1,
+    )
+
     def execute(self, context):
-        if import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup, bArchive=self.setting_archive):
+        if import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup, bArchive=self.setting_archive, fScaling=self.setting_scaling):
             return {'FINISHED'}
         else:
             return {'CANCELLED'}

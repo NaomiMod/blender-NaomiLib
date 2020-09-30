@@ -260,7 +260,7 @@ def redraw():
         if area.type in ['IMAGE_EDITOR', 'VIEW_3D']:
             area.tag_redraw()
 
-def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, parent_col: bpy.types.Collection):
+def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, parent_col: bpy.types.Collection, scale: float):
     print("meshes:", len(meshes))
 
     for i, mesh in enumerate(meshes):
@@ -282,6 +282,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, p
 
         # create object out of mesh
         new_object = bpy.data.objects.new(f"object_{i}", new_mesh)
+        new_object.scale = Vector( [scale]*3 )
 
         #print("new object", new_object.name)
 
@@ -295,7 +296,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, p
 # MAIN functions
 ########################
 
-def main_function_import_file(self, filename: str):
+def main_function_import_file(self, filename: str, scaling: float):
 
     with open(filename, "rb") as f:
         NL = f.read(-1)
@@ -304,10 +305,10 @@ def main_function_import_file(self, filename: str):
 
     mesh_vertex, mesh_uvs, faces, meshes = parse_nl(NL)
 
-    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=bpy.context.scene.collection)
+    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=bpy.context.scene.collection, scale=scaling)
 
 
-def main_function_import_archive(self, filename: str):
+def main_function_import_archive(self, filename: str, scaling: float):
     main_col = bpy.context.scene.collection
 
     with open(filename, "rb") as f:
@@ -345,7 +346,7 @@ def main_function_import_archive(self, filename: str):
             sub_col = bpy.data.collections.new(f"child_{i}")
             main_col.children.link(sub_col)
 
-            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=sub_col): return False
+            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=sub_col, scale=scaling): return False
             f.seek(st_p)
             start_offset = end_offset
 
