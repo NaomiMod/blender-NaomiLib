@@ -335,6 +335,8 @@ def main_function_import_archive(self, filename: str):
                 end_offset = read_uint32_buff()
 
             f.seek(start_offset)
+            print("NEW child start offset:", start_offset)
+            print("NEW child end offset:", end_offset)
             mesh_vertex, mesh_uvs, faces, meshes = parse_nl( f.read(end_offset-start_offset) )
 
             sub_col = bpy.data.collections.new(f"child_{i}")
