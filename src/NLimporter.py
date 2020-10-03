@@ -45,7 +45,10 @@ triple_face_types_little = [    # special face types
     b'\xEA\x01\x00\x00',        # EA 01
 ]
 
-type_b_vertex_little = b'\xFF\x5F'
+type_b_vertex_little = [
+    b'\xFF\x5F',
+    b'\xFE\x5F',
+]
 
 xVal = 0
 yVal = 1
@@ -85,7 +88,7 @@ def parse_nl(nl_bytes: bytes) -> list:
 
         # convert all magics to big endian
         triple_face_types = [ b[::-1] for b in triple_face_types_little ]
-        type_b_vertex = type_b_vertex_little[::-1]
+        type_b_vertex = [ b[::-1] for b in type_b_vertex_little ]
     
 
     #nlfile.seek(0x68)
@@ -141,7 +144,7 @@ def parse_nl(nl_bytes: bytes) -> list:
                 # check if Type A or Type B vertex
                 entry_pos = nlfile.tell()
                 if not big_endian: nlfile.seek(0x2, 0x1)
-                if nlfile.read(0x2) == type_b_vertex:
+                if nlfile.read(0x2) in type_b_vertex:
                     type_b = True
                     if big_endian: nlfile.seek(0x2, 0x1)
                     pointer_offset = read_sint32_buff()
