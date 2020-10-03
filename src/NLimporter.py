@@ -190,6 +190,8 @@ def parse_nl(nl_bytes: bytes) -> list:
             f += 1
             vertex_index_last += n_vertex
 
+            print("-----")
+
         #print(meshes[4]['vertex'][-1])
         print("number of faces found:", f)
 
