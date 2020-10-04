@@ -6,6 +6,7 @@ Currently there are 2 known revisions of the NaomiLib library, known as NLOBJPUT
 NaomiLib format has been extensively researched by Vincent for the initial purpose of creating custom 3D models in Virtua Tennis. Upon completing the model structure research, Vincent eve ntually met TheZocker on Blender Script Discord channel and thanks to TheZocker immense Blender & Python coding skills, their cooperation eventually led to the present addon.
 The release version is able to open 3D models in NL format and variation used by Super Monkey Ball on Gamecube.
 
+# Features
 This addon is currently in WIP status, new games and features will be addressed as they are know 
 If you find any bug or error in loading models, please reach me out on Discord! Vincent#5259
 
