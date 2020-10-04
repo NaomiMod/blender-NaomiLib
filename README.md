@@ -1,25 +1,41 @@
 # Blender NaomiLib importer Addon
-NaomiLib is a 3D graphics format developed by AM2 division extensively used by SEGA on arcade games between 1999-2001, especially on SEGA Naomi arcade hardware and SEGA Dreamcast.
-Currently there are 2 known revisions of the NaomiLib library, known as NLOBJPUT Ver.0.99 and 0.8
 
-# Story
+NaomiLib is a graphic format developed by AM2 division, extensively used by SEGA between 1999-2001 in SEGA Naomi arcade hardware and SEGA Dreamcast.
+Currently there are two known NaomiLib versions: NLOBJPUT Ver.0.99 and 0.8
+
 NaomiLib format has been extensively researched by Vincent for the initial purpose of creating custom 3D models in Virtua Tennis. Upon completing the model structure research, Vincent eve ntually met TheZocker on Blender Script Discord channel and thanks to TheZocker immense Blender & Python coding skills, their cooperation eventually led to the present addon.
 The release version is able to open 3D models in NL format and variation used by Super Monkey Ball on Gamecube.
 
 # Features
-This addon is currently in WIP status, new games and features will be addressed as they are know 
-If you find any bug or error in loading models, please reach me out on Discord! Vincent#5259
 
-Addon has 3 import options:
+-Loads 3D models with original texture U/V
 
-Clean scene (To clean up the current scene before import)
-Scale factor (Especially to reduce Monkey Ball huge 3D backgrounds)
-Lz_p (3D model containres used by Super Monkey Ball on GameCube)
+Import function has three options:
+
+1)Clean scene (Clean up the current scene before import)
+2)Scale factor (Especially useful to reduce Super / Monkey Ball huge 3D backgrounds)
+3)Lz_p (3D model containres used by Super Monkey Ball on GameCube)
+
+# Contacts / Bug Reports:
+
+This addon is currently in WIP status, new features and games will be added to the list as we gather new data.
+
+Before reporting an issue please check this out:
+
+1) Please take note that at the present time only single models or archives are supported. if you want to load models conposed by multiple files, you need to import them without ticking the "Clean scene box".
+We also suggest using F3 shortcut to bring up a "recent commands" menu in Blender, by searching for "bin", will bring NaomiLib name and import screen immediately.
+
+2) RGB / Transparency / Reflectiveness is not imported yet.
+
+3) You cannot export models in NL format.
+
+4) We do not distribute any game model / textures with this addon. We will have to legally dump your own games and extract files from it. Specific extractors will be be provided on a dedicate section.
+
+If you want to help us out in finding new games supporting NL, find any bug or errors in loading models, please reach me out on Discord: **Vincent#5259
 
 # Disclaimer
+
 This project is intended exclusively for educational purposes and has no affiliation with SEGA or any other third party developer. NaomiLib format,NLOBJPUT and games using it are exlusive property of SEGA. Blender NaomiLib importer Addon is a recreative project, no compensation has been offered for research and will not be accepted in any form.
-
-
 
 ## Supported games
 
@@ -42,9 +58,6 @@ This project is intended exclusively for educational purposes and has no affilia
 | Virtua Tennis 2 / Power Smash 2             | SEGA DREAMCAST          |
 | Monkey Ball                                 | ARCADE NAOMI - GDS-0008 |
 | Virtua Tennis / Power Smash                 | ARCADE NAOMI - GDS-0011 |
-
-
-
 
 
 ## How to install
