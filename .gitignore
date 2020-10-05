@@ -3,6 +3,7 @@
 
 _template
 _samples
+_docs
 
 __pycache__
 src/__pycache__/
