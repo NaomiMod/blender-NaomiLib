@@ -57,7 +57,7 @@ class ImportNL(bpy.types.Operator, ImportHelper):
 
     setting_archive: BoolProperty(
         name="File is LZ_P archive",
-        description="check this box when the file is an archive",
+        description="3D model archive used by Super Monkey Ball (GameCube)",
         default=False,
     )
 
