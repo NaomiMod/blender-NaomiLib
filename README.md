@@ -3,7 +3,7 @@
 NaomiLib is a graphic format developed by AM2 division, extensively used by SEGA between 1999-2001 in SEGA Naomi arcade hardware and SEGA Dreamcast.
 Currently there are two known NaomiLib versions: NLOBJPUT Ver.0.99 and 0.8
 
-NaomiLib format has been researched by Vincent for the initial purpose of creating custom 3D models in Virtua Tennis. Upon completing the model structure research, Vincent eve ntually met TheZocker on Blender Script Discord channel and thanks to TheZocker immense Blender & Python coding skills, their cooperation eventually led to the present addon.
+NaomiLib format has been researched by Vincent for the initial purpose of creating custom 3D models in Virtua Tennis. Upon completing the model structure research, Vincent eventually met TheZocker on Blender Script Discord channel and thanks to TheZocker immense Blender & Python coding skills, their cooperation eventually led to the present addon.
 The release version is able to open 3D models in NL format and variation used by Super Monkey Ball on Gamecube.
 
 # Features
@@ -13,8 +13,8 @@ The release version is able to open 3D models in NL format and variation used by
 Import function has three options:
 
 1. Clean scene (Clean up the current scene before import)
-2. Scale factor (Especially useful to reduce Super / Monkey Ball huge 3D backgrounds)
-3. Lz_p (3D model containres used by Super Monkey Ball on GameCube)
+2. Scale factor (Especially useful to reduce Super / Monkey Balls huge 3D backgrounds)
+3. Lz_p (3D model containers used by Super Monkey Ball on GameCube)
 
 # Contacts / Bug Reports:
 
