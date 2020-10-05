@@ -72,3 +72,8 @@ make
 ```
 
 Install the addon into Blender using the created zip package
+
+## Supported Blender versions:
+
+- Blender 2.83 LTS
+- Blender 2.90
