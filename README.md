@@ -16,6 +16,8 @@ Import function has three options:
 2. Scale factor (Especially useful to reduce Super / Monkey Balls huge 3D backgrounds)
 3. Lz_p (3D model containers used by Super Monkey Ball on GameCube)
 
+![alt text](https://i.imgur.com/dg4QDzU.png)
+
 # Contacts / Bug Reports:
 
 This addon is currently in WIP status, new features and games will be added to the list as we gather new data.
