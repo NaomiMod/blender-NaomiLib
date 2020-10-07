@@ -45,7 +45,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Cosmic Smash                               | SEGA DREAMCAST          |
 | Crazy Taxi                                 | SEGA DREAMCAST          |
 | Crazy Taxi 2                               | SEGA DREAMCAST          |
-| Dead or Alive 2 Ultimate                   | SEGA DREAMCAST          |
+| Dead or Alive 2                            | SEGA DREAMCAST          |
 | Ferrari F355 Challenge                     | SEGA DREAMCAST          |
 | Fighting Vipers 2                          | SEGA DREAMCAST          |
 | Giant Gram 2000: All-Japan Pro Wrestling 2 | SEGA DREAMCAST          |
