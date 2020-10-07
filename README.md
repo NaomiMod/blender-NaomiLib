@@ -82,4 +82,4 @@ Install the addon into Blender using the created zip package
 
 ## Special Thanks to:
 
-- Deo , Lenders18 , Melfice , Kobainkurt , TheBosZ, Merdaio
+- Deo , Kobainkurt , Lenders18 , Melfice , TheBosZ, Merdaio
