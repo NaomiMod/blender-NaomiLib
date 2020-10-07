@@ -28,7 +28,7 @@ Before reporting an issue please check this out:
    We also suggest using F3 shortcut to bring up a  `recent commands` menu in Blender, by searching for `bin`, will bring NaomiLib name and import screen immediately.
 2. RGB / Transparency / Reflectiveness is not imported yet.
 3. You cannot export models in NL format.
-4. We do not distribute any game model / textures. You will have to legally dump your own games and extract files from it. Specific extractors will be be provided on a dedicate section.
+4. We do not distribute any game model / textures. You will have to legally dump your own games and extract files from it. Specific extractors are provided on a dedicate section https://github.com/zocker-160/blender-NaomiLib/tree/master/Game_Extraction_Tools
 
 If you want to help us out in finding new games supporting NL, find any bug or errors in loading models, please reach me out on Discord: **Vincent#5259
 
