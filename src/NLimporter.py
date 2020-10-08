@@ -8,7 +8,7 @@ import struct
 
 from io import BytesIO
 from math import radians
-from mathutils import Vector, Matrix
+from mathutils import Vector
 
 # static magic numbers and headers
 
@@ -287,7 +287,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, p
 
         # create object out of mesh
         new_object = bpy.data.objects.new(f"object_{i}", new_mesh)
-        new_object.scale = Vector( [scale]*3 )
+        new_object.scale = [scale]*3
 
         #print("new object", new_object.name)
 
