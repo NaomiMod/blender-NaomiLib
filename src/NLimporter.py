@@ -5,6 +5,7 @@ from bpy.props import FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 import struct
+import os
 
 from io import BytesIO
 from math import radians
@@ -301,22 +302,32 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, p
 # MAIN functions
 ########################
 
-def main_function_import_file(self, filename: str, scaling: float):
+def main_function_import_file(self, filepath: str, scaling: float):
 
-    with open(filename, "rb") as f:
+    with open(filepath, "rb") as f:
         NL = f.read(-1)
 
+    print(filepath)
+    filename = filepath.split(os.sep)[-1]
     print(filename)
 
     mesh_vertex, mesh_uvs, faces, meshes = parse_nl(NL)
 
-    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=bpy.context.scene.collection, scale=scaling)
+    # create own collection for each imported file
+    obj_col = bpy.data.collections.new(filename)
+    bpy.context.scene.collection.children.link(obj_col)
+
+    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=obj_col, scale=scaling)
 
 
-def main_function_import_archive(self, filename: str, scaling: float):
-    main_col = bpy.context.scene.collection
+def main_function_import_archive(self, filepath: str, scaling: float):
+    filename = filepath.split(os.sep)[-1]
 
-    with open(filename, "rb") as f:
+    # create own collection for each imported file
+    obj_col = bpy.data.collections.new(filename)
+    bpy.context.scene.collection.children.link(obj_col)
+
+    with open(filepath, "rb") as f:
         read_uint32_buff = lambda: struct.unpack("<I", f.read(0x4))[0]
         read_uint16_buff = lambda: struct.unpack("<H", f.read(0x2))[0]
 
@@ -349,7 +360,7 @@ def main_function_import_archive(self, filename: str, scaling: float):
             mesh_vertex, mesh_uvs, faces, meshes = parse_nl( f.read(end_offset-start_offset) )
 
             sub_col = bpy.data.collections.new(f"child_{i}")
-            main_col.children.link(sub_col)
+            obj_col.children.link(sub_col)
 
             if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=sub_col, scale=scaling): return False
             f.seek(st_p)

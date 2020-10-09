@@ -30,9 +30,9 @@ def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fSca
     ret = False
 
     if bArchive:
-        ret = NLi.main_function_import_archive(self, filename=filepath, scaling=fScaling)
+        ret = NLi.main_function_import_archive(self, filepath=filepath, scaling=fScaling)
     else:
-        ret = NLi.main_function_import_file(self, filename=filepath, scaling=fScaling)
+        ret = NLi.main_function_import_file(self, filepath=filepath, scaling=fScaling)
     return ret
 
 class ImportNL(bpy.types.Operator, ImportHelper):
