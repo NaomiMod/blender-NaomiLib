@@ -58,6 +58,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Virtua Tennis 2 / Power Smash 2            | SEGA DREAMCAST          |
 | House of The Dead 2                        | ARCADE NAOMI            |
 | Monkey Ball                                | ARCADE NAOMI - GDS-0008 |
+| SEGA Marine Fishing                        | ARCADE NAOMI            |
 | Virtua Tennis / Power Smash                | ARCADE NAOMI - GDS-0011 |
 
 ## How to install
