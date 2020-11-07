@@ -33,17 +33,19 @@ magic_naomilib_big = [
 triple_face_types_little = [    # special face types
     b'\x6A\x00\x00\x00',        # 6A
     b'\x69\x00\x00\x00',        # 69
-    b'\x0A\x00\x00\x00',        # 0A
-    b'\x2A\x00\x00\x00',        # 2A
     b'\x49\x00\x00\x00',        # 49
+    b'\x0A\x00\x00\x00',        # 0A
+    b'\x29\x00\x00\x00',        # 29
+    b'\x2A\x00\x00\x00',        # 2A
     b'\x4A\x00\x00\x00',        # 4A
     b'\xEA\x00\x00\x00',        # EA
 
     b'\x6A\x01\x00\x00',        # 6A 01
     b'\x69\x01\x00\x00',        # 69 01
+    b'\x49\x01\x00\x00',        # 69 01
     b'\x0A\x01\x00\x00',        # 0A 01
     b'\x2A\x01\x00\x00',        # 2A 01
-    b'\x49\x01\x00\x00',        # 49 01
+    b'\x29\x01\x00\x00',        # 29 01
     b'\x4A\x01\x00\x00',        # 4A 01
     b'\xEA\x01\x00\x00',        # EA 01
 ]
