@@ -50,6 +50,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Fighting Vipers 2                          | SEGA DREAMCAST          |
 | Giant Gram 2000: All-Japan Pro Wrestling 2 | SEGA DREAMCAST          |
 | Giant Gram 2000: All-Japan Pro Wrestling 3 | SEGA DREAMCAST          |
+| Mobile Suit Gundam: Federation vs. Zeon    | SEGA DREAMCAST          |
 | Outtrigger                                 | SEGA DREAMCAST          |
 | Power Stone 2                              | SEGA DREAMCAST          |
 | Shenmue 2                                  | SEGA DREAMCAST          |
