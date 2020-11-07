@@ -61,6 +61,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Outtrigger                                 | ARCADE NAOMI            |
 | Monkey Ball                                | ARCADE NAOMI - GDS-0008 |
 | SEGA Marine Fishing                        | ARCADE NAOMI            |
+| SPAWN - In The Demon's Hand                | ARCADE NAOMI            |
 | Virtua Tennis / Power Smash                | ARCADE NAOMI - GDS-0011 |
 
 ## How to install
