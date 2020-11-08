@@ -60,6 +60,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Mobile Suit Gundam: Federation vs. Zeon    | ARCADE NAOMI            |
 | House of The Dead 2                        | ARCADE NAOMI            |
 | Outtrigger                                 | ARCADE NAOMI            |
+| Project Justice                            | ARCADE NAOMI            |
 | Monkey Ball                                | ARCADE NAOMI - GDS-0008 |
 | SEGA Marine Fishing                        | ARCADE NAOMI            |
 | SPAWN - In The Demon's Hand                | ARCADE NAOMI            |
