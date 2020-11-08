@@ -56,6 +56,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Virtua Fighter 3tb                         | SEGA DREAMCAST          |
 | Virtua Tennis / Power Smash                | SEGA DREAMCAST          |
 | Virtua Tennis 2 / Power Smash 2            | SEGA DREAMCAST          |
+| Cannon Spike                               | ARCADE NAOMI            |
 | Mobile Suit Gundam: Federation vs. Zeon    | ARCADE NAOMI            |
 | House of The Dead 2                        | ARCADE NAOMI            |
 | Outtrigger                                 | ARCADE NAOMI            |
