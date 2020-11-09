@@ -96,6 +96,20 @@ triple_face_types_little = [    # special face types
 type_b_vertex_little = [
     b'\xFF\x5F',
     b'\xFE\x5F',
+    b'\xFD\x5F',
+    b'\xFC\x5F',
+    b'\xFB\x5F',
+    b'\xFA\x5F',
+    b'\xF9\x5F',
+    b'\xF8\x5F',
+    b'\xF7\x5F',
+    b'\xF6\x5F',
+    b'\xF5\x5F',
+    b'\xF4\x5F',
+    b'\xF3\x5F',
+    b'\xF2\x5F',
+    b'\xF1\x5F',
+    b'\xF0\x5F',
 ]
 
 xVal = 0
