@@ -42,6 +42,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Game                                       | Device                  |
 | ------------------------------------------ | ----------------------- |
 | 18 Wheeler: American Pro Trucker           | SEGA DREAMCAST          |
+| Cannon Spike                               | SEGA DREAMCAST          |
 | Cosmic Smash                               | SEGA DREAMCAST          |
 | Crazy Taxi                                 | SEGA DREAMCAST          |
 | Crazy Taxi 2                               | SEGA DREAMCAST          |
@@ -50,6 +51,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Fighting Vipers 2                          | SEGA DREAMCAST          |
 | Giant Gram 2000: All-Japan Pro Wrestling 2 | SEGA DREAMCAST          |
 | Giant Gram 2000: All-Japan Pro Wrestling 3 | SEGA DREAMCAST          |
+| House of The Dead 2                        | SEGA DREAMCAST          |
 | Outtrigger                                 | SEGA DREAMCAST          |
 | Power Stone 2                              | SEGA DREAMCAST          |
 | Shenmue 2                                  | SEGA DREAMCAST          |
