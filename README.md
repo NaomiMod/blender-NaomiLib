@@ -64,6 +64,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Outtrigger                                 | ARCADE NAOMI            |
 | Project Justice                            | ARCADE NAOMI            |
 | Monkey Ball                                | ARCADE NAOMI - GDS-0008 |
+| Ninja Assault                              | ARCADE NAOMI            |
 | SEGA Marine Fishing                        | ARCADE NAOMI            |
 | SPAWN - In The Demon's Hand                | ARCADE NAOMI            |
 | World Kicks                                | ARCADE NAOMI            |
