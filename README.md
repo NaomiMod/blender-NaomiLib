@@ -68,6 +68,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | SPAWN - In The Demon's Hand                | ARCADE NAOMI            |
 | World Kicks                                | ARCADE NAOMI            |
 | Virtua Tennis / Power Smash                | ARCADE NAOMI - GDS-0011 |
+| Zombie Revenge                             | ARCADE NAOMI            |
 
 ## How to install
 
