@@ -67,6 +67,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Ninja Assault                              | ARCADE NAOMI            |
 | SEGA Marine Fishing                        | ARCADE NAOMI            |
 | SPAWN - In The Demon's Hand                | ARCADE NAOMI            |
+| The Typing of the Dead                     | ARCADE NAOMI            |
 | World Kicks                                | ARCADE NAOMI            |
 | Virtua Tennis / Power Smash                | ARCADE NAOMI - GDS-0011 |
 | Zero Gunner 2                              | ARCADE NAOMI            |
