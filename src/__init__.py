@@ -22,7 +22,7 @@ from bpy_extras.io_utils import ImportHelper, path_reference_mode
 importlib.reload(NLimporter)
 
 
-def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fScaling: float):
+def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fScaling: float, bDebug: bool):
     if bCleanup:
         print("CLEANING UP")
         NLi.cleanup()
@@ -30,9 +30,9 @@ def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fSca
     ret = False
 
     if bArchive:
-        ret = NLi.main_function_import_archive(self, filepath=filepath, scaling=fScaling)
+        ret = NLi.main_function_import_archive(self, filepath=filepath, scaling=fScaling, debug=bDebug)
     else:
-        ret = NLi.main_function_import_file(self, filepath=filepath, scaling=fScaling)
+        ret = NLi.main_function_import_file(self, filepath=filepath, scaling=fScaling, debug=bDebug)
     return ret
 
 class ImportNL(bpy.types.Operator, ImportHelper):
@@ -69,8 +69,14 @@ class ImportNL(bpy.types.Operator, ImportHelper):
         max=1,
     )
 
+    setting_debug: BoolProperty(
+        name="enable debugging",
+        description="enables debugging mode and prints useful information into log",
+        default=False,
+    )
+
     def execute(self, context):
-        if import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup, bArchive=self.setting_archive, fScaling=self.setting_scaling):
+        if import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup, bArchive=self.setting_archive, fScaling=self.setting_scaling, bDebug=self.setting_debug):
             return {'FINISHED'}
         else:
             return {'CANCELLED'}

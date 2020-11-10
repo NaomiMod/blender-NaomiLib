@@ -120,7 +120,7 @@ zVal = 2
 # main parse function
 #############################
 
-def parse_nl(nl_bytes: bytes) -> list:
+def parse_nl(nl_bytes: bytes, debug=False) -> list:
     big_endian = False
     nlfile = BytesIO(nl_bytes)
 
@@ -156,7 +156,7 @@ def parse_nl(nl_bytes: bytes) -> list:
     #nlfile.seek(0x68)
     nlfile.seek(0x64)
     mesh_end_offset = read_uint32_buff() + 0x64
-    print("MESH END offset START:", mesh_end_offset)
+    if debug: print("MESH END offset START:", mesh_end_offset)
 
     meshes = list()
     mesh_faces = list()
@@ -168,11 +168,11 @@ def parse_nl(nl_bytes: bytes) -> list:
         if m == 0: # first loop needs special treatment
             nlfile.seek(nlfile.tell()-0x4, 0x0)
         else:
-            print(nlfile.tell())
+            if debug: print(nlfile.tell())
             nlfile.seek(0x4C-0x4, 0x1)
-            print(nlfile.tell())
+            if debug: print(nlfile.tell())
             mesh_end_offset = read_uint32_buff() + nlfile.tell()
-            print("MESH END offset m > 0:", mesh_end_offset)
+            if debug: print("MESH END offset m > 0:", mesh_end_offset)
 
         faces_vertex = list()
         faces_index = list()
@@ -183,7 +183,7 @@ def parse_nl(nl_bytes: bytes) -> list:
             mult = False
 
             face_type = nlfile.read(0x4) # some game internal value
-            print(face_type)
+            if debug: print(face_type)
             if face_type in triple_face_types: # check for triple vertex faces
                 mult = True
             else:
@@ -192,10 +192,10 @@ def parse_nl(nl_bytes: bytes) -> list:
             n_face = read_uint32_buff() # number of faces for this chunk (depending on the type it needs either one or three vertices / face)
             if mult:
                 n_vertex = n_face * 3                
-                print("triple number of vertices")
+                if debug: print("triple number of vertices")
             else:
                 n_vertex = n_face
-            print(n_vertex)
+            if debug: print(n_vertex)
             
 
             vertex = list()
@@ -226,7 +226,7 @@ def parse_nl(nl_bytes: bytes) -> list:
             #print(normal)
             #print(texture_uv)
 
-            print("current position:", nlfile.tell())
+            if debug: print("current position:", nlfile.tell())
             
             faces_vertex.append( {
                 'point': vertex,
@@ -255,10 +255,10 @@ def parse_nl(nl_bytes: bytes) -> list:
             f += 1
             vertex_index_last += n_vertex
 
-            print("-----")
+            if debug: print("-----")
 
         #print(meshes[4]['vertex'][-1])
-        print("number of faces found:", f)
+        if debug: print("number of faces found:", f)
 
         meshes.append( {
             'face_vertex': faces_vertex,
@@ -287,10 +287,10 @@ def parse_nl(nl_bytes: bytes) -> list:
         mesh_uvs.append(textures)
 
     
-    print("number of meshes found:", m)
+    if debug: print("number of meshes found:", m)
     #print(meshes[0]['face_vertex'][0]['point'][1])
     #print(mesh_vertices)
-    print(faces_index)
+    if debug: print(faces_index)
     #print(mesh_uvs)
 
 
@@ -327,8 +327,8 @@ def redraw():
         if area.type in ['IMAGE_EDITOR', 'VIEW_3D']:
             area.tag_redraw()
 
-def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, parent_col: bpy.types.Collection, scale: float):
-    print("meshes:", len(meshes))
+def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, parent_col: bpy.types.Collection, scale: float, debug=False):
+    if debug: print("meshes:", len(meshes))
 
     for i, mesh in enumerate(meshes):
         #print("mesh", i, mesh['vertex'])
@@ -363,7 +363,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, p
 # MAIN functions
 ########################
 
-def main_function_import_file(self, filepath: str, scaling: float):
+def main_function_import_file(self, filepath: str, scaling: float, debug: bool):
 
     with open(filepath, "rb") as f:
         NL = f.read(-1)
@@ -372,16 +372,16 @@ def main_function_import_file(self, filepath: str, scaling: float):
     filename = filepath.split(os.sep)[-1]
     print(filename)
 
-    mesh_vertex, mesh_uvs, faces, meshes = parse_nl(NL)
+    mesh_vertex, mesh_uvs, faces, meshes = parse_nl(NL, debug=debug)
 
     # create own collection for each imported file
     obj_col = bpy.data.collections.new(filename)
     bpy.context.scene.collection.children.link(obj_col)
 
-    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=obj_col, scale=scaling)
+    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=obj_col, scale=scaling, debug=debug)
 
 
-def main_function_import_archive(self, filepath: str, scaling: float):
+def main_function_import_archive(self, filepath: str, scaling: float, debug: bool):
     filename = filepath.split(os.sep)[-1]
 
     # create own collection for each imported file
@@ -416,18 +416,18 @@ def main_function_import_archive(self, filepath: str, scaling: float):
                     end_offset = read_uint32_buff()
 
             f.seek(start_offset)
-            print("NEW child start offset:", start_offset)
-            print("NEW child end offset:", end_offset)
-            mesh_vertex, mesh_uvs, faces, meshes = parse_nl( f.read(end_offset-start_offset) )
+            if debug: print("NEW child start offset:", start_offset)
+            if debug: print("NEW child end offset:", end_offset)
+            mesh_vertex, mesh_uvs, faces, meshes = parse_nl( f.read(end_offset-start_offset), debug=debug )
 
             sub_col = bpy.data.collections.new(f"child_{i}")
             obj_col.children.link(sub_col)
 
-            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=sub_col, scale=scaling): return False
+            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=sub_col, scale=scaling, debug=debug): return False
             f.seek(st_p)
             start_offset = end_offset
 
 
-    print("NUMBER OF CHILDREN:", num_child_models)
+    if debug: print("NUMBER OF CHILDREN:", num_child_models)
 
     return True
