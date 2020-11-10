@@ -51,7 +51,6 @@ This project is intended exclusively for educational purposes and has no affilia
 | Fighting Vipers 2                          | SEGA DREAMCAST          |
 | Giant Gram 2000: All-Japan Pro Wrestling 2 | SEGA DREAMCAST          |
 | Giant Gram 2000: All-Japan Pro Wrestling 3 | SEGA DREAMCAST          |
-| Marvel Vs Capcom 2                         | SEGA DREAMCAST          |
 | House of The Dead 2                        | SEGA DREAMCAST          |
 | Outtrigger                                 | SEGA DREAMCAST          |
 | Power Stone 2                              | SEGA DREAMCAST          |
@@ -72,6 +71,9 @@ This project is intended exclusively for educational purposes and has no affilia
 | Virtua Tennis / Power Smash                | ARCADE NAOMI - GDS-0011 |
 | Zero Gunner 2                              | ARCADE NAOMI            |
 | Zombie Revenge                             | ARCADE NAOMI            |
+| Marvel Vs Capcom 2                         | ARCADE NAOMI            |
+| Capcom Vs Snk 2                            | ARCADE NAOMI            |
+
 
 ## How to install
 
