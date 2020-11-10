@@ -3,7 +3,7 @@ bl_info = {
     "author" : "zocker_160",
     "description" : "addon for importing NaomiLib bin files",
     "blender" : (2, 90, 1),
-    "version" : (0, 8),
+    "version" : (0, 9),
     "location" : "File > Import",
     "warning" : "",
     "category" : "Import",
