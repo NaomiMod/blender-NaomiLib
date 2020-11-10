@@ -236,16 +236,17 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             
             if mult:
                 for j in range(n_face):
-                    
-                    x = vertex_index_last + j*3
-                    y = vertex_index_last + j*3 + 1
-                    z = vertex_index_last + j*3 + 2
+                    i = vertex_index_last + j*3
+
+                    x = i
+                    y = i + 1
+                    z = i + 2
 
                     faces_index.append( [x, y, z] )
             else:
                 for j in range(n_vertex-2):
-                    i = j + vertex_index_last
-                    
+                    i = vertex_index_last + j
+
                     x = i
                     y = i + 1
                     z = i + 2
