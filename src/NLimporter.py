@@ -134,6 +134,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     if not big_endian:
         read_uint32_buff = lambda: struct.unpack("<I", nlfile.read(0x4))[0]
         read_sint32_buff = lambda: struct.unpack("<i", nlfile.read(0x4))[0]
+        read_float_buff = lambda: struct.unpack("<f", nlfile.read(0x4))[0]
 
         read_point3_buff = lambda: struct.unpack("<fff", nlfile.read(0xC))
         read_point2_buff = lambda: struct.unpack("<ff", nlfile.read(0x8))
@@ -144,6 +145,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     else:
         read_uint32_buff = lambda: struct.unpack(">I", nlfile.read(0x4))[0]
         read_sint32_buff = lambda: struct.unpack(">i", nlfile.read(0x4))[0]
+        read_float_buff = lambda: struct.unpack(">f", nlfile.read(0x4))[0]
 
         read_point3_buff = lambda: struct.unpack(">fff", nlfile.read(0xC))
         read_point2_buff = lambda: struct.unpack(">ff", nlfile.read(0x8))
@@ -153,13 +155,22 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         type_b_vertex = [ b[::-1] for b in type_b_vertex_little ]
     
 
-    #nlfile.seek(0x68)
-    nlfile.seek(0x64)
-    mesh_end_offset = read_uint32_buff() + 0x64
-    if debug: print("MESH END offset START:", mesh_end_offset)
-
     meshes = list()
     mesh_faces = list()
+    mesh_colors = list()
+
+    #nlfile.seek(0x68)
+    #nlfile.seek(0x64)
+    nlfile.seek(0x44)
+
+    # RGB color of the first mesh
+    mesh_colors.append( (read_float_buff(), read_float_buff(), read_float_buff()) )
+
+    # skip 0x14 unknown values
+    nlfile.seek(0x14, 0x1)
+
+    mesh_end_offset = read_uint32_buff() + 0x64
+    if debug: print("MESH END offset START:", mesh_end_offset)
 
     m = 0
     # while not EOF
@@ -169,9 +180,17 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             nlfile.seek(nlfile.tell()-0x4, 0x0)
         else:
             if debug: print(nlfile.tell())
-            nlfile.seek(0x4C-0x4, 0x1)
+
+            # read RGB color
+            nlfile.seek(0x4C-0x20, 0x1)
+            mesh_colors.append( (read_float_buff(), read_float_buff(), read_float_buff()) )
+            nlfile.seek(0x10, 0x1)
+            #nlfile.seek(0x4C-0x4, 0x1)
+
             if debug: print(nlfile.tell())
+
             mesh_end_offset = read_uint32_buff() + nlfile.tell()
+
             if debug: print("MESH END offset m > 0:", mesh_end_offset)
 
         faces_vertex = list()
@@ -293,7 +312,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     #print(mesh_vertices)
     if debug: print(faces_index)
     #print(mesh_uvs)
-
+    #print(mesh_colors)
 
     #### data structure
     # meshes[index][face_vertex|face_index]
@@ -305,7 +324,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     # mesh_faces[mesh_index][face_index][0|1|2]
     ####
 
-    return mesh_vertices, mesh_uvs, mesh_faces, meshes
+    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors
 
 
 ########################
@@ -328,7 +347,7 @@ def redraw():
         if area.type in ['IMAGE_EDITOR', 'VIEW_3D']:
             area.tag_redraw()
 
-def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, parent_col: bpy.types.Collection, scale: float, debug=False):
+def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, parent_col: bpy.types.Collection, scale: float, debug=False):
     if debug: print("meshes:", len(meshes))
 
     for i, mesh in enumerate(meshes):
@@ -354,6 +373,14 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, p
 
         #print("new object", new_object.name)
 
+        # add viewport color to object
+        new_mat = bpy.data.materials.new(f"object_{i}_mat")
+        new_mat.diffuse_color = meshColors[i] + (1,)
+        new_mat.roughness = 1
+        new_mat.metallic = 0.5
+
+        new_object.data.materials.append(new_mat)
+
         # link object to parent collection
         parent_col.objects.link(new_object)
         #bpy.context.collection.objects.link(new_object)
@@ -373,13 +400,13 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool):
     filename = filepath.split(os.sep)[-1]
     print(filename)
 
-    mesh_vertex, mesh_uvs, faces, meshes = parse_nl(NL, debug=debug)
+    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors = parse_nl(NL, debug=debug)
 
     # create own collection for each imported file
     obj_col = bpy.data.collections.new(filename)
     bpy.context.scene.collection.children.link(obj_col)
 
-    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=obj_col, scale=scaling, debug=debug)
+    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, parent_col=obj_col, scale=scaling, debug=debug)
 
 
 def main_function_import_archive(self, filepath: str, scaling: float, debug: bool):
@@ -419,12 +446,12 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
             f.seek(start_offset)
             if debug: print("NEW child start offset:", start_offset)
             if debug: print("NEW child end offset:", end_offset)
-            mesh_vertex, mesh_uvs, faces, meshes = parse_nl( f.read(end_offset-start_offset), debug=debug )
+            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors = parse_nl( f.read(end_offset-start_offset), debug=debug )
 
             sub_col = bpy.data.collections.new(f"child_{i}")
             obj_col.children.link(sub_col)
 
-            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, parent_col=sub_col, scale=scaling, debug=debug): return False
+            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, parent_col=sub_col, scale=scaling, debug=debug): return False
             f.seek(st_p)
             start_offset = end_offset
 
