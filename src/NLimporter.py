@@ -161,13 +161,13 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
 
     #nlfile.seek(0x68)
     #nlfile.seek(0x64)
-    nlfile.seek(0x44)
+    nlfile.seek(0x48)
 
     # RGB color of the first mesh
     mesh_colors.append( (read_float_buff(), read_float_buff(), read_float_buff()) )
 
     # skip 0x14 unknown values
-    nlfile.seek(0x14, 0x1)
+    nlfile.seek(0x10, 0x1)
 
     mesh_end_offset = read_uint32_buff() + 0x64
     if debug: print("MESH END offset START:", mesh_end_offset)
