@@ -63,6 +63,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | House of The Dead 2                        | ARCADE NAOMI            |
 | Outtrigger                                 | ARCADE NAOMI            |
 | Project Justice                            | ARCADE NAOMI            |
+| Spikers Battle                             | ARCADE NAOMI - GDS-0005 |
 | Monkey Ball                                | ARCADE NAOMI - GDS-0008 |
 | Ninja Assault                              | ARCADE NAOMI            |
 | SEGA Marine Fishing                        | ARCADE NAOMI            |
