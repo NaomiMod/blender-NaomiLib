@@ -15,6 +15,7 @@ from mathutils import Vector
 
 magic_naomilib = [ 
     b'\x01\x00\x00\x00\x01\x00\x00\x00', # Objects Model 1
+    b'\x00\x00\x00\x00\x01\x00\x00\x00', # Objects Model 1 Used by DOA2
     b'\x01\x00\x00\x00\x02\x00\x00\x00', # Unknown Objects Model 2
     b'\x01\x00\x00\x00\x03\x00\x00\x00', # Objects Model 3 - Generally Levels
     b'\x01\x00\x00\x00\x05\x00\x00\x00', # Objects Model 5
@@ -27,6 +28,7 @@ magic_naomilib_big = [
 	b'\x00\x00\x00\x01\x00\x00\x00\x03', # Objects Model 3 - used by Super Monkey Ball / GameCube
 	b'\x00\x00\x00\x01\x00\x00\x00\x05', # Objects Model 5 - used by Super Monkey Ball / GameCube
 	b'\x00\x00\x00\x00\x00\x00\x00\x05', # Objects Model 5 Type B - used by Super Monkey Ball / GameCube
+	b'\x00\x00\x00\x00\x00\x00\x00\x01', # Objects Model 1 ?
 
 ]
 
