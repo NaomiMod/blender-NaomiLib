@@ -5,7 +5,7 @@ Currently there are two known NaomiLib versions: NLOBJPUT Ver.0.99 and 0.8
 
 Check out our Wiki if you're looking for [model format](https://github.com/NaomiMod/NL-ModelFormat/wiki)!
 
-NaomiLib format has been researched by Vincent for the initial purpose of creating custom 3D models in Virtua Tennis (Virtua Merdaio). Upon completing the model structure research, Vincent eventually met TheZocker on Blender Script Discord channel and thanks to TheZocker immense Blender & Python coding skills, their cooperation eventually led to the present addon.
+NaomiLib format has been researched by VincentNL for the initial purpose of creating custom 3D models in Virtua Tennis (Virtua Merdaio). Upon completing the model structure research, VincentNL eventually met TheZocker on Blender Script Discord channel and thanks to TheZocker immense Blender & Python coding skills, their cooperation eventually led to the present addon.
 The release version is able to open 3D models in NL format and variation used by Super Monkey Ball on Gamecube.
 
 # Features
