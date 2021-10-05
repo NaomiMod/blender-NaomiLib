@@ -5,7 +5,7 @@ Currently there are two known NaomiLib versions: NLOBJPUT Ver.0.99 and 0.8
 
 Check out our Wiki if you're looking for [model format](https://github.com/NaomiMod/NL-ModelFormat/wiki)!
 
-NaomiLib format has been researched by VincentNL for the initial purpose of creating custom 3D models in Virtua Tennis (Virtua Merdaio). Upon completing the model structure research, VincentNL eventually met TheZocker on Blender Script Discord channel and thanks to TheZocker immense Blender & Python coding skills, their cooperation eventually led to the present addon.
+NaomiLib format has been researched by VincentNL for the initial purpose of creating custom 3D models in Virtua Tennis (Virtua Merdaio). Upon completing the model structure research, Vincent eventually met TheZocker on Blender Script Discord channel and thanks to TheZocker immense Blender & Python coding skills, their cooperation eventually led to the present addon.
 The release version is able to open 3D models in NL format and variation used by Super Monkey Ball on Gamecube.
 
 # Features
@@ -47,6 +47,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Crazy Taxi                                 | SEGA DREAMCAST          |
 | Crazy Taxi 2                               | SEGA DREAMCAST          |
 | Dead or Alive 2                            | SEGA DREAMCAST          |
+| Dead or Alive 2 - Prototype (27 JAN 2000)  | SEGA DREAMCAST          |
 | Ferrari F355 Challenge                     | SEGA DREAMCAST          |
 | Fighting Vipers 2                          | SEGA DREAMCAST          |
 | Giant Gram 2000: All-Japan Pro Wrestling 2 | SEGA DREAMCAST          |
@@ -55,6 +56,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Outtrigger                                 | SEGA DREAMCAST          |
 | Power Stone 2                              | SEGA DREAMCAST          |
 | Shenmue 2                                  | SEGA DREAMCAST          |
+| Sports Jam                                 | SEGA DREAMCAST          |
 | Virtua Fighter 3tb                         | SEGA DREAMCAST          |
 | Virtua Tennis / Power Smash                | SEGA DREAMCAST          |
 | Virtua Tennis 2 / Power Smash 2            | SEGA DREAMCAST          |
