@@ -15,7 +15,7 @@ from mathutils import Vector
 
 magic_naomilib = [ 
     b'\x01\x00\x00\x00\x01\x00\x00\x00', # Objects Model 1
-	b'\x00\x00\x00\x00\x01\x00\x00\x00', # Objects Model 1 Used by DOA2
+    b'\x00\x00\x00\x00\x01\x00\x00\x00', # Objects Model 1 Used by DOA2
     b'\x01\x00\x00\x00\x02\x00\x00\x00', # Unknown Objects Model 2
     b'\x01\x00\x00\x00\x03\x00\x00\x00', # Objects Model 3 - Generally Levels
     b'\x01\x00\x00\x00\x05\x00\x00\x00', # Objects Model 5
@@ -157,7 +157,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         type_b_vertex = [ b[::-1] for b in type_b_vertex_little ]
 
 
-    # Model Header Global_Flag0 used to determine model format
+    # Read Model Header Global_Flag0, to determine model format
 
     nlfile.seek(0x0)
     gflag0 = (nlfile.read(0x1))
@@ -175,11 +175,11 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         print("ERROR!")
      print("\n")
 
-    # Model Header Global_Flag1, read bits 0-8
+    # Read Model Header Global_Flag1, to determine model format
 
     nlfile.seek(0x4)
     gflag1 = (nlfile.read(0x2))
-    gflag1 = int.from_bytes(gflag1, "little")   # I know it's bad, feel free to change it :D  - VincentNL
+    gflag1 = int.from_bytes(gflag1, "little")
     gflag1_bit0 = (gflag1 >> (0))&1
     gflag1_bit1 = (gflag1 >> (1))&1
     gflag1_bit2 = (gflag1 >> (2))&1
@@ -201,7 +201,25 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         print("Reserved 2 : " + str(gflag1_bit6))
         print("Reserved 3 : " + str(gflag1_bit7))
         print("Reserved 4 : " + str(gflag1_bit8))
-        print("-----")
+
+    # Model Header Object Centroid: x,y,z,bounding radius
+
+    nlfile.seek(0x8)
+    obj_centr_x = read_float_buff()
+    nlfile.seek(0xC)
+    obj_centr_y = read_float_buff()
+    nlfile.seek(0x10)
+    obj_centr_z = read_float_buff()
+    nlfile.seek(0x14)
+    obj_bound_radius = read_float_buff()
+
+    if debug:
+	print("-----")
+        print("obj_centroid: x = "+(str(obj_centr_x)))
+        print("obj_centroid: y = "+(str(obj_centr_y)))
+        print("obj_centroid: z = "+(str(obj_centr_z)))
+        print("obj_bnd_radius: = "+(str(obj_bound_radius)))
+
 
 
     meshes = list()
