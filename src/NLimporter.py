@@ -175,7 +175,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         print("ERROR!")
      print("\n")
 
-    # Read Model Header Global_Flag1, to determine model format
+    # Model Header Global_Flag1, read bits 0-8
 
     nlfile.seek(0x4)
     gflag1 = (nlfile.read(0x2))
