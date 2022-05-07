@@ -15,7 +15,7 @@ from mathutils import Vector
 
 magic_naomilib = [ 
     b'\x01\x00\x00\x00\x01\x00\x00\x00', # Objects Model 1
-    b'\x00\x00\x00\x00\x01\x00\x00\x00', # Objects Model 1 Used by DOA2
+	b'\x00\x00\x00\x00\x01\x00\x00\x00', # Objects Model 1 Used by DOA2
     b'\x01\x00\x00\x00\x02\x00\x00\x00', # Unknown Objects Model 2
     b'\x01\x00\x00\x00\x03\x00\x00\x00', # Objects Model 3 - Generally Levels
     b'\x01\x00\x00\x00\x05\x00\x00\x00', # Objects Model 5
@@ -155,7 +155,54 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         # convert all magics to big endian
         triple_face_types = [ b[::-1] for b in triple_face_types_little ]
         type_b_vertex = [ b[::-1] for b in type_b_vertex_little ]
-    
+
+
+    # Model Header Global_Flag0 used to determine model format
+
+    nlfile.seek(0x0)
+    gflag0 = (nlfile.read(0x1))
+
+    if debug:
+     print("-----Global_Flag0-----" + "\n")
+
+     if gflag0 == b'\x00':
+        print('Pure_Beta')
+     elif gflag0 == b'\x01':
+        print('Super_Index')
+     elif gflag0 == b'\xFF':
+        print('NULL')
+     else:
+        print("ERROR!")
+     print("\n")
+
+    # Read Model Header Global_Flag1, to determine model format
+
+    nlfile.seek(0x4)
+    gflag1 = (nlfile.read(0x2))
+    gflag1 = int.from_bytes(gflag1, "little")   # I know it's bad, feel free to change it :D  - VincentNL
+    gflag1_bit0 = (gflag1 >> (0))&1
+    gflag1_bit1 = (gflag1 >> (1))&1
+    gflag1_bit2 = (gflag1 >> (2))&1
+    gflag1_bit3 = (gflag1 >> (3))&1
+    gflag1_bit4 = (gflag1 >> (4))&1
+    gflag1_bit5 = (gflag1 >> (5))&1
+    gflag1_bit6 = (gflag1 >> (6))&1
+    gflag1_bit7 = (gflag1 >> (7))&1
+    gflag1_bit8 = (gflag1 >> (8))&1
+
+    if debug:
+        print("-----Global_Flag1-----"+"\n")
+        print("Always true : " + str(gflag1_bit0))
+        print("Skip 1st light source op. : " + str(gflag1_bit1))
+        print("Environment mapping : " + str(gflag1_bit2))
+        print("Palette texture : " + str(gflag1_bit3))
+        print("Bump map available : " + str(gflag1_bit4))
+        print("Reserved 1 : " + str(gflag1_bit5))
+        print("Reserved 2 : " + str(gflag1_bit6))
+        print("Reserved 3 : " + str(gflag1_bit7))
+        print("Reserved 4 : " + str(gflag1_bit8))
+        print("-----")
+
 
     meshes = list()
     mesh_faces = list()
