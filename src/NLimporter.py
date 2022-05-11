@@ -518,27 +518,20 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     m = 0
 
 
-    ##############################
-    # TEST get first mesh params #
-    ##############################
-
-    if debug:
-           nlfile.seek(0x18)       # first mesh parameters always start at 0x18
-           mesh_param()            # WIP needs to be called each time a new mesh is being read
-
-
-
     # while not EOF
     while nlfile.read(0x4) != b'\x00\x00\x00\x00':
 
         if m == 0:  # first loop needs special treatment
-            nlfile.seek(nlfile.tell() - 0x4, 0x0)
+            #nlfile.seek(nlfile.tell() - 0x4, 0x0)
+            nlfile.seek(0x18)    # first mesh parameters always start at 0x18
+            mesh_param()
         else:
             if debug:
                 print(nlfile.tell())
-                savepos = nlfile.seek(nlfile.tell() - 0x4, 0x0)     # !temporary code! save current position - 0x4, or won't read mesh data
-                mesh_param()
-                nlfile.seek(savepos + 0x4)   # !temporary code! return to saved offeset after reading mesh data
+
+            savepos = nlfile.seek(nlfile.tell() - 0x4, 0x0)     # Save current position - 0x4, or won't read mesh data
+            mesh_param()                                        # Get mesh parameters bitflags
+            nlfile.seek(savepos + 0x4)                          # Go to savepos to resume reading file
 
 
             # read RGB color
@@ -575,14 +568,17 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             else:
                 mult = False
 
+
             n_face = read_uint32_buff()  # number of faces for this chunk (depending on the type it needs either one or three vertices / face)
             if mult:
                 n_vertex = n_face * 3
                 if debug: print("triple number of vertices")
             else:
                 n_vertex = n_face
-            if debug: print(n_vertex)
 
+
+            if debug: print(n_vertex)
+            print()
             vertex = list()
             normal = list()
             texture_uv = list()
@@ -601,6 +597,16 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                     type_b = False
                     nlfile.seek(entry_pos, 0x0)
 
+                ###########################
+                # TO IMPLEMENT
+                #
+                # if m_tex_shading == -3 , vertex format is:
+                #
+                # [xVal|yVal|zVal][0x7F][vtx_color1][vtx color2],[U],[V]      / vertex color is BGRA8888
+                #
+                ###########################
+
+                # if vertex
                 vertex.append(read_point3_buff())
                 normal.append(read_point3_buff())
                 texture_uv.append(read_point2_buff())
