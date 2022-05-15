@@ -264,7 +264,155 @@ class Naomi_ISP_TSP_Properties(bpy.types.PropertyGroup):
                  ('1', "Use on Small Polys",""),
                 ],
     )
-        
+class Naomi_TSP_Properties(bpy.types.PropertyGroup):
+    srcAlpha : bpy.props.EnumProperty(
+        description= "Sets Alpha Source",
+        name= "Alpha Source",
+        items = [('0', "Zero (0, 0, 0, 0)",""),
+                 ('1', "One (1, 1, 1, 1)",""),
+                 ('2', "\'Other\' Color (OR, OG, OB, OA)",""),
+                 ('3', "Inverse \'Other\' Color (1-OR, 1-OG, 1-OB, 1-OA)",""),
+                 ('4', "SRC Alpha (SA, SA, SA, SA)",""),
+                 ('5', "Inverse SRC Alpha (1-SA, 1-SA, 1-SA, 1-SA)",""),
+                 ('6', "DST Alpha (DA, DA, DA, DA)",""),
+                 ('7', "Inverse DST Alpha (1-DA, 1-DA, 1-DA, 1-DA)",""),
+        ],
+    )
+    dstAlpha : bpy.props.EnumProperty(
+        description= "Sets Alpha Destination",
+        name= "Alpha Destination",
+        items = [('0', "Zero (0, 0, 0, 0)",""),
+                 ('1', "One (1, 1, 1, 1)",""),
+                 ('2', "\'Other\' Color (OR, OG, OB, OA)",""),
+                 ('3', "Inverse \'Other\' Color (1-OR, 1-OG, 1-OB, 1-OA)",""),
+                 ('4', "SRC Alpha (SA, SA, SA, SA)",""),
+                 ('5', "Inverse SRC Alpha (1-SA, 1-SA, 1-SA, 1-SA)",""),
+                 ('6', "DST Alpha (DA, DA, DA, DA)",""),
+                 ('7', "Inverse DST Alpha (1-DA, 1-DA, 1-DA, 1-DA)",""),
+        ],
+    )
+    srcSelect : bpy.props.EnumProperty(
+        description= "Selects the SRC Buffer",
+        name = "SRC Buffer Select", 
+        items = [('0', "Primary Accumulation Buffer SRC",""),
+                 ('1', "Secondary Accumulation Buffer SRC",""),
+        ],
+    ) 
+    dstSelect : bpy.props.EnumProperty(
+        description= "Selects the DST Buffer",
+        name = "DST Buffer Select", 
+        items = [('0', "Primary Accumulation Buffer DST",""),
+                 ('1', "Secondary Accumulation Buffer DST",""),
+        ],
+    ) 
+    fogOp : bpy.props.EnumProperty(
+        description= "Fog Setting",
+        name= "Fog Setting",
+        items = [('0', "LUT (Look Up Table)",""),
+                 ('1', "Per Vertex",""),
+                 ('2', "No Fog",""),
+                 ('3', "LUT M2 (Look Up Table, Mode 2)",""),
+        ],
+    ) 
+    colorClamp : bpy.props.EnumProperty(
+        description= "Sets color clamp mode",
+        name = "Color Clamp", 
+        items = [('0', "Underflow",""),
+                 ('1', "Overflow",""),
+        ],
+    )
+    alphaOp : bpy.props.EnumProperty(
+        description= "Sets alpha mode",
+        name = "Alpha Mode", 
+        items = [('0', "Opaque",""),
+                 ('1', "Translucent",""),
+        ],
+    )
+    alphaTexOp : bpy.props.EnumProperty(
+        description= "Sets usage of texture alpha",
+        name = "Texture Alpha Usage", 
+        items = [('0', "Use Texture Alpha",""),
+                 ('1', "Ignore Texture Alpha",""),
+        ],
+    )
+    uvFlip : bpy.props.EnumProperty(
+        description= "Sets UV flipping",
+        name = "UV Flip Mode", 
+        items = [('0', "No Flipping",""),
+                 ('1', "Flip Y",""),
+                 ('2', "Flip X",""),
+                 ('3', "Flip X,Y",""),
+        ],
+    )
+    uvClamp : bpy.props.EnumProperty(
+        description= "Sets UV clamping",
+        name = "UV Clamp Mode", 
+        items = [('0', "No Clamping",""),
+                 ('1', "Clamp Y",""),
+                 ('2', "Clamp X",""),
+                 ('3', "Clamp X,Y",""),
+        ],
+    )
+    filter : bpy.props.EnumProperty(
+        description= "Sets texture filtering",
+        name = "Texture Filter", 
+        items = [('0', "Point Sampled",""),
+                 ('1', "Bilinear Filter",""),
+                 ('2', "Tri-linear Pass A",""),
+                 ('3', "Tri-linear Pass B",""),
+        ],
+    )
+    supSample : bpy.props.EnumProperty(
+        description= "Sets super-sampling of texture",
+        name = "Texture Super-Sample", 
+        items = [('0', "Disabled",""),
+                 ('1', "Enabled",""),
+        ],
+    )
+    mipmapDAdj : bpy.props.EnumProperty(
+        description= "Mipmap D Adjust Setting",
+        name = "Mipmap D Adjust", 
+        items = [( '1', "0.25",""),
+                 ( '4', "1.00",""),
+                 ('16', "3.75",""),
+                 ( '0', "Illegal",""),
+        ],
+    )
+    texShading : bpy.props.EnumProperty(
+        description= "Texture/Shading",
+        name = "Texture/Shading", 
+        items = [('0', "Decal [PIXrgb = TEXrgb + OFFSETrgb]  [PIXa = TEXa]",""),
+                 ('1', "Modulate [PIXrgb = COLrgb * TEXrgb + OFFSETrgb]  [PIXa = TEXa]",""),
+                 ('2', "Decal Alpha [PIXrgb = (TEXrgb + TEXa) + (COLrgb * (1-TEXa)) + OFFSETrgb]  [PIXa = COLa]",""),
+                 ('3', "Modulate Alpha [PIXrgb = COLrgb * TEXrgb + OFFSETrgb]  [PIXa = COLa * TEXa]",""),
+        ],
+    )
+    texUSize : bpy.props.EnumProperty(
+        description= "Sets U Size (Width)",
+        name= "U Size (Width)",
+        items = [('0', "Width:    8 px",""),
+                 ('1', "Width:   16 px",""),
+                 ('2', "Width:   32 px",""),
+                 ('3', "Width:   64 px",""),
+                 ('4', "Width:  128 px",""),
+                 ('5', "Width:  256 px",""),
+                 ('6', "Width:  512 px",""),
+                 ('7', "Width: 1024 px",""),
+        ],
+    )
+    texVSize : bpy.props.EnumProperty(
+        description= "Sets V Size (Height)",
+        name= "V Size (Height)",
+        items = [('0', "Height:    8 px",""),
+                 ('1', "Height:   16 px",""),
+                 ('2', "Height:   32 px",""),
+                 ('3', "Height:   64 px",""),
+                 ('4', "Height:  128 px",""),
+                 ('5', "Height:  256 px",""),
+                 ('6', "Height:  512 px",""),
+                 ('7', "Height: 1024 px",""),
+        ],
+    )      
     
 class Naomi_TexCtrl_Properties(bpy.types.PropertyGroup):
     mipMapped : bpy.props.EnumProperty(
@@ -355,6 +503,25 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
         box.prop(naomi_isp_tsp_p, "cacheBypass") 
         box.prop(naomi_isp_tsp_p, "dCalcCtrl") 
         
+        layout.label(text= "TSP")
+        naomi_tsp_p = active.naomi_tsp
+        box = layout.box()
+        box.prop(naomi_tsp_p, "srcAlpha")
+        box.prop(naomi_tsp_p, "dstAlpha")
+        box.prop(naomi_tsp_p, "srcSelect")
+        box.prop(naomi_tsp_p, "dstSelect")   
+        box.prop(naomi_tsp_p, "fogOp")  
+        box.prop(naomi_tsp_p, "colorClamp")
+        box.prop(naomi_tsp_p, "alphaOp")   
+        box.prop(naomi_tsp_p, "alphaTexOp") 
+        box.prop(naomi_tsp_p, "uvFlip")   
+        box.prop(naomi_tsp_p, "uvClamp")  
+        box.prop(naomi_tsp_p, "filter")
+        box.prop(naomi_tsp_p, "supSample")
+        box.prop(naomi_tsp_p, "mipmapDAdj")   
+        box.prop(naomi_tsp_p, "texShading") 
+        box.prop(naomi_tsp_p, "texUSize")
+        box.prop(naomi_tsp_p, "texVSize") 
         
         layout.label(text= "Texture Control")
         naomi_tex_ctrl = active.naomi_texCtrl
@@ -366,7 +533,7 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
         box.prop(naomi_tex_ctrl, "texCtrlUstride")
   
         
-classes = [Naomi_Param_Properties, Naomi_ISP_TSP_Properties, Naomi_TexCtrl_Properties, OBJECT_PT_Naomi_Properties]
+classes = [Naomi_Param_Properties, Naomi_ISP_TSP_Properties, Naomi_TSP_Properties, Naomi_TexCtrl_Properties, OBJECT_PT_Naomi_Properties]
 
 # Only needed if you want to add into a dynamic menu
 def menu_func_import(self, context):
@@ -380,6 +547,7 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.Object.naomi_param = bpy.props.PointerProperty(type= Naomi_Param_Properties)
     bpy.types.Object.naomi_isp_tsp = bpy.props.PointerProperty(type= Naomi_ISP_TSP_Properties)
+    bpy.types.Object.naomi_tsp = bpy.props.PointerProperty(type= Naomi_TSP_Properties)
     bpy.types.Object.naomi_texCtrl = bpy.props.PointerProperty(type= Naomi_TexCtrl_Properties)
 
 def unregister():
@@ -390,6 +558,7 @@ def unregister():
         bpy.utils.unregister_class(cls)
     del bpy.types.Object.naomi_param   
     del bpy.types.Object.naomi_isp_tsp
+    del bpy.types.Object.naomi_tsp
     del bpy.types.Object.naomi_texCtrl 
 
 if __name__ == "__main__":
