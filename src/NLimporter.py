@@ -96,11 +96,12 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
 
     # sint8 to float, code by Zocker!                / need to verify accuracy
     def sint8_to_float(num: int) -> float:
-            min, max = -127, 128
-            if num >= 0:
-                return num / max
-            else:
-                return num / -min
+        min, max = 0x7f, 0x80
+        if num > 0x7f:
+            num -= 0x100
+            return num / max
+        else:
+            return num / min
 
 
 
