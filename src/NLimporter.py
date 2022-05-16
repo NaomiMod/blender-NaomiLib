@@ -79,6 +79,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         read_point3_buff = lambda: struct.unpack("<fff", nlfile.read(0xC))
         read_point2_buff = lambda: struct.unpack("<ff", nlfile.read(0x8))
 
+
         # assign magics
         type_b_vertex = type_b_vertex_little
     else:
@@ -92,9 +93,21 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         # convert all magics to big endian
         type_b_vertex = [b[::-1] for b in type_b_vertex_little]
 
+
+    # sint8 to float, code by Zocker!                / need to verify accuracy
+    def sint8_to_float(num: int) -> float:
+            min, max = -127, 128
+            if num >= 0:
+                return num / max
+            else:
+                return num / -min
+
+
+
     #############################
     # model header function
     #############################
+
 
 
 
@@ -386,7 +399,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             print("Texture ID: " + str(t_var))
 
         # 7. texture shading
-
+        global m_tex_shading
         m_tex_shading = read_sint32_buff()
         spec_int = m_tex_shading ** 10 / 10
 
@@ -435,7 +448,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         m_col_offs_B = read_float_buff()
 
         if debug:
-            print("\n" + "-----Mesh_Base_Colors_ARGB-----" + "\n")
+            print("\n" + "-----Mesh_Offset_Colors_ARGB-----" + "\n")
             print(f"Alpha: {m_col_offs_A}")
             print(f"Red  : {m_col_offs_R}")
             print(f"Green: {m_col_offs_G}")
@@ -525,6 +538,8 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             #nlfile.seek(nlfile.tell() - 0x4, 0x0)
             nlfile.seek(0x18)    # first mesh parameters always start at 0x18
             mesh_param()
+
+
         else:
             if debug:
                 print(nlfile.tell())
@@ -532,6 +547,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             savepos = nlfile.seek(nlfile.tell() - 0x4, 0x0)     # Save current position - 0x4, or won't read mesh data
             mesh_param()                                        # Get mesh parameters bitflags
             nlfile.seek(savepos + 0x4)                          # Go to savepos to resume reading file
+
 
 
             # read RGB color
@@ -597,18 +613,42 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                     type_b = False
                     nlfile.seek(entry_pos, 0x0)
 
+                # if vertex
+
+                vertex.append(read_point3_buff())
+
+
                 ###########################
-                # TO IMPLEMENT
                 #
                 # if m_tex_shading == -3 , vertex format is:
-                #
-                # [xVal|yVal|zVal][0x7F][vtx_color1][vtx color2],[U],[V]      / vertex color is BGRA8888
+                # [xVal|yVal|zVal][sint8 nx,ny,nz,0x00][vtx_color1][vtx color2],[U],[V]      / vertex color is BGRA8888
                 #
                 ###########################
 
-                # if vertex
-                vertex.append(read_point3_buff())
-                normal.append(read_point3_buff())
+                if m_tex_shading == -3:
+                    norm_sint8_x = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+                    norm_sint8_y = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+                    norm_sint8_z = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+                    nlfile.read(0x1)     # zero byte
+
+                    vtx_col1_A = nlfile.read(0x1)
+                    vtx_col1_R = nlfile.read(0x1)
+                    vtx_col1_G = nlfile.read(0x1)
+                    vtx_col1_B = nlfile.read(0x1)
+                    vtx_col2_A = nlfile.read(0x1)
+                    vtx_col2_R = nlfile.read(0x1)
+                    vtx_col2_G = nlfile.read(0x1)
+                    vtx_col2_B = nlfile.read(0x1)
+
+                    normal.append((norm_sint8_x, norm_sint8_y, norm_sint8_z))
+
+                    if debug: print(f"(normals: x,y,z: {normal}\nvtx_col1: ARGB:{vtx_col1_A}{vtx_col1_R}{vtx_col1_G}{vtx_col1_B}\n"
+                                    f"vtx_col2: ARGB:{vtx_col2_A}{vtx_col2_R}{vtx_col2_G}{vtx_col2_B}")
+
+                else:
+                    normal.append(read_point3_buff())      # if m_tex_shading != -3, read normals as regular floats
+
+
                 texture_uv.append(read_point2_buff())
 
                 if type_b: nlfile.seek(entry_pos, 0x0)
