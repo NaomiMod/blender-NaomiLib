@@ -31,7 +31,6 @@ magic_naomilib_big = [
     b'\x00\x00\x00\x00\x00\x00\x00\x05',  # Pure Beta , always true , Environment mapping
 ]
 
-
 type_b_vertex_little = [
     b'\xFF\x5F',
     b'\xFE\x5F',
@@ -79,7 +78,6 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         read_point3_buff = lambda: struct.unpack("<fff", nlfile.read(0xC))
         read_point2_buff = lambda: struct.unpack("<ff", nlfile.read(0x8))
 
-
         # assign magics
         type_b_vertex = type_b_vertex_little
     else:
@@ -93,7 +91,6 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         # convert all magics to big endian
         type_b_vertex = [b[::-1] for b in type_b_vertex_little]
 
-
     # sint8 to float, code by Zocker!                / need to verify accuracy
     def sint8_to_float(num: int) -> float:
         min, max = 0x7f, 0x80
@@ -103,14 +100,9 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         else:
             return num / min
 
-
-
     #############################
     # model header function
     #############################
-
-
-
 
     # Read Model Header Global_Flag0, to determine model format
 
@@ -149,19 +141,18 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     gflag1_bit8 = (gflag1 >> 8) & 1
 
     if debug:
-
-        bit_ny = ["No ","Yes"]   # It's just a list to show No or Yes, based on bit value 0 or 1
+        bit_ny = ["No ", "Yes"]  # It's just a list to show No or Yes, based on bit value 0 or 1
 
         print("-----Global_Flag1-----" + "\n")
-        print("bit0     | Always true          :["+str(gflag1_bit0)+"] " + bit_ny[(gflag1_bit0)])
-        print("bit1     | Skip 1st lgt src op. :["+str(gflag1_bit1)+"] " + bit_ny[(gflag1_bit1)])
-        print("bit2     | Environment mapping  :["+str(gflag1_bit2)+"] " + bit_ny[(gflag1_bit2)])
-        print("bit3     | Palette texture      :["+str(gflag1_bit3)+"] " + bit_ny[(gflag1_bit3)])
-        print("bit4     | Bump map available   :["+str(gflag1_bit4)+"] " + bit_ny[(gflag1_bit4)])
-        print("bit5     | Reserved 1           :["+str(gflag1_bit5)+"] " + bit_ny[(gflag1_bit5)])
-        print("bit6     | Reserved 2           :["+str(gflag1_bit6)+"] " + bit_ny[(gflag1_bit6)])
-        print("bit7     | Reserved 3           :["+str(gflag1_bit7)+"] " + bit_ny[(gflag1_bit7)])
-        print("bit8     | Reserved 4           :["+str(gflag1_bit8)+"] " + bit_ny[(gflag1_bit8)])
+        print("bit0     | Always true          :[" + str(gflag1_bit0) + "] " + bit_ny[(gflag1_bit0)])
+        print("bit1     | Skip 1st lgt src op. :[" + str(gflag1_bit1) + "] " + bit_ny[(gflag1_bit1)])
+        print("bit2     | Environment mapping  :[" + str(gflag1_bit2) + "] " + bit_ny[(gflag1_bit2)])
+        print("bit3     | Palette texture      :[" + str(gflag1_bit3) + "] " + bit_ny[(gflag1_bit3)])
+        print("bit4     | Bump map available   :[" + str(gflag1_bit4) + "] " + bit_ny[(gflag1_bit4)])
+        print("bit5     | Reserved 1           :[" + str(gflag1_bit5) + "] " + bit_ny[(gflag1_bit5)])
+        print("bit6     | Reserved 2           :[" + str(gflag1_bit6) + "] " + bit_ny[(gflag1_bit6)])
+        print("bit7     | Reserved 3           :[" + str(gflag1_bit7) + "] " + bit_ny[(gflag1_bit7)])
+        print("bit8     | Reserved 4           :[" + str(gflag1_bit8) + "] " + bit_ny[(gflag1_bit8)])
 
     # Model Header Object Centroid: x,y,z,bounding radius
     nlfile.seek(0x8)
@@ -176,7 +167,6 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         print("obj_centroid: y = " + (str(obj_centr_y)))
         print("obj_centroid: z = " + (str(obj_centr_z)))
         print("obj_bnd_radius: = " + (str(obj_bound_radius)))
-
 
     ###################
     # mesh parameters
@@ -205,34 +195,56 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         m_pflag_bit4_5 = (m_pflag >> 4) & 3
         m_pflag_bit6 = (m_pflag >> 6) & 1
         m_pflag_bit7 = (m_pflag >> 7) & 1
+        m_pflag_bit17_16 = (m_pflag >> 16) & 3
+        m_pflag_bit19_18 = (m_pflag >> 18) & 3
+        m_pflag_bit23 = (m_pflag >> 23) & 1
         m_pflag_bit24_26 = (m_pflag >> 24) & 7
+        m_pflag_bit28 = (m_pflag >> 28) & 1
         m_pflag_bit29_31 = (m_pflag >> 29) & 7
 
+        l_Parameter_Header = list()
+        l_Parameter_Header.append(m_pflag_bit29_31)  # 0
+        l_Parameter_Header.append(m_pflag_bit28)  # 1
+        l_Parameter_Header.append(m_pflag_bit24_26)  # 2
+        l_Parameter_Header.append(m_pflag_bit23)  # 3
+        l_Parameter_Header.append(m_pflag_bit19_18)  # 4
+        l_Parameter_Header.append(m_pflag_bit17_16)  # 5
+        l_Parameter_Header.append(m_pflag_bit7)  # 6
+        l_Parameter_Header.append(m_pflag_bit6)  # 7
+        l_Parameter_Header.append(m_pflag_bit4_5)  # 8
+        l_Parameter_Header.append(m_pflag_bit3)  # 9
+        l_Parameter_Header.append(m_pflag_bit2)  # 10
+        l_Parameter_Header.append(m_pflag_bit1)  # 11
+        l_Parameter_Header.append(m_pflag_bit0)  # 12
+
         if debug:
+            # lists of mesh parameters options! Debug only!
 
-         # lists of mesh parameters options! Debug only!
+            bit_par0 = ["32/bit U/V ", "16/bit U/V "]
+            bit_par1 = ["Flat ", "Gouraud "]
+            bit_par4_5 = ["Packed Color", "Floating Color", "Intensity Mode 1", "Intensity Mode 2"]
+            bit_par24_26 = ["Opaque", "Opaque Modifier Volume", "Translucent", "Translucent Modifier Volume",
+                            "Punch Through", "Reserved", "Reserved", "Reserved"]
+            bit_par29_31 = ["Control Parameter End Of List", "Control Parameter User Tile Clip",
+                            "Control Parameter Object List Set", "Reserved",
+                            "Global Parameter Polygon or Modifier Volume", "Global Parameter Sprite",
+                            "Global Parameter Reserved", "Vertex Parameter"]
 
-           bit_par0 = ["32/bit U/V ", "16/bit U/V "]
-           bit_par1 = ["Flat ","Gouraud "]
-           bit_par4_5 = ["Packed Color","Floating Color","Intensity Mode 1","Intensity Mode 2"]
-           bit_par24_26 = ["Opaque","Opaque Modifier Volume","Translucent","Translucent Modifier Volume","Punch Through","Reserved","Reserved","Reserved"]
-           bit_par29_31 = ["Control Parameter End Of List","Control Parameter User Tile Clip","Control Parameter Object List Set","Reserved","Global Parameter Polygon or Modifier Volume","Global Parameter Sprite","Global Parameter Reserved","Vertex Parameter"]
+            # Debug printout
 
-         # Debug printout
-
-           print("\n"+"-----------------------------")
-           print(f"     Mesh {m} Header        ")
-           print("-----------------------------")
-           print("\n"+"-----Mesh_Param_Flags-----"+"\n")
-           print("bit0     | 16/bit U/V   :[" + str(m_pflag_bit0) + "] " + bit_par0[(m_pflag_bit0)])
-           print("bit1     | Gouraud      :[" + str(m_pflag_bit1) + "] " + bit_par1[(m_pflag_bit1)])
-           print("bit2     | Color Offset :[" + str(m_pflag_bit2) + "] " + bit_ny[(m_pflag_bit2)])
-           print("bit3     | Texture      :[" + str(m_pflag_bit3) + "] " + bit_ny[(m_pflag_bit3)])
-           print("bit4-5   | Color Type   :[" + str(m_pflag_bit4_5) + "] " + bit_par4_5[(m_pflag_bit4_5)])
-           print("bit6     | Use Volume   :[" + str(m_pflag_bit6) + "] " + bit_ny[(m_pflag_bit6)])
-           print("bit7     | Use Shadow   :[" + str(m_pflag_bit7) + "] " + bit_ny[(m_pflag_bit7)])
-           print("bit4-5   | List Type    :[" + str(m_pflag_bit24_26) + "] "+ bit_par24_26[(m_pflag_bit24_26)])
-           print("bit29-31 | Para Type    :[" + str(m_pflag_bit29_31) + "] "+ bit_par29_31[(m_pflag_bit29_31)])
+            print("\n" + "-----------------------------")
+            print(f"     Mesh {m} Header        ")
+            print("-----------------------------")
+            print("\n" + "-----Mesh_Param_Flags-----" + "\n")
+            print("bit0     | 16/bit U/V   :[" + str(m_pflag_bit0) + "] " + bit_par0[(m_pflag_bit0)])
+            print("bit1     | Gouraud      :[" + str(m_pflag_bit1) + "] " + bit_par1[(m_pflag_bit1)])
+            print("bit2     | Color Offset :[" + str(m_pflag_bit2) + "] " + bit_ny[(m_pflag_bit2)])
+            print("bit3     | Texture      :[" + str(m_pflag_bit3) + "] " + bit_ny[(m_pflag_bit3)])
+            print("bit4-5   | Color Type   :[" + str(m_pflag_bit4_5) + "] " + bit_par4_5[(m_pflag_bit4_5)])
+            print("bit6     | Use Volume   :[" + str(m_pflag_bit6) + "] " + bit_ny[(m_pflag_bit6)])
+            print("bit7     | Use Shadow   :[" + str(m_pflag_bit7) + "] " + bit_ny[(m_pflag_bit7)])
+            print("bit4-5   | List Type    :[" + str(m_pflag_bit24_26) + "] " + bit_par24_26[(m_pflag_bit24_26)])
+            print("bit29-31 | Para Type    :[" + str(m_pflag_bit29_31) + "] " + bit_par29_31[(m_pflag_bit29_31)])
 
         # 2. mesh parameters bit20-31         / 0-19 it's unused
 
@@ -247,29 +259,41 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         m_isptspflag_bit27_28 = (m_isptspflag >> 27) & 3
         m_isptspflag_bit29_31 = (m_isptspflag >> 29) & 7
 
+        l_ISP_TSP_Header = list()
+        l_ISP_TSP_Header.append(m_isptspflag_bit29_31)
+        l_ISP_TSP_Header.append(m_isptspflag_bit27_28)
+        l_ISP_TSP_Header.append(m_isptspflag_bit26)
+        l_ISP_TSP_Header.append(m_isptspflag_bit25)
+        l_ISP_TSP_Header.append(m_isptspflag_bit24)
+        l_ISP_TSP_Header.append(m_isptspflag_bit23)
+        l_ISP_TSP_Header.append(m_isptspflag_bit22)
+        l_ISP_TSP_Header.append(m_isptspflag_bit21)
+        l_ISP_TSP_Header.append(m_isptspflag_bit20)
+
         if debug:
+            # lists of mesh parameters options! Debug only!
 
-         # lists of mesh parameters options! Debug only!
+            bit_par20 = ["No", "Use D Calc for small polys"]
+            bit_par22 = ["32/bit U/V ", "16/bit U/V "]
+            bit_par23 = ["Flat ", "Gouraud "]
+            bit_par27_28 = ["No Culling", "Cull if Small", "Cull if Negative", "Cull if Positive"]
+            bit_par29_31 = ["NEVER", "LESS", "EQUAL", "LESS OR EQUAL", "GREATER", "NOT_EQUAL", "GREATER OR EQUAL",
+                            "ALWAYS"]
 
-           bit_par20 = ["No", "Use D Calc for small polys"]
-           bit_par22 = ["32/bit U/V ", "16/bit U/V "]
-           bit_par23 = ["Flat ", "Gouraud "]
-           bit_par27_28 = ["No Culling","Cull if Small","Cull if Negative","Cull if Positive"]
-           bit_par29_31 = ["NEVER","LESS","EQUAL","LESS OR EQUAL","GREATER","NOT_EQUAL","GREATER OR EQUAL","ALWAYS"]
+            # Debug printout
 
-         # Debug printout
-
-           print("\n"+"-----Mesh_ISP_TSP-----"+"\n")
-           print("bit20    | DcalcCtrl        :[" + str(m_isptspflag_bit20) + "] " + bit_par20[(m_isptspflag_bit20)])
-           print("bit21    | CacheBypass      :[" + str(m_isptspflag_bit21) + "] " + bit_ny[(m_isptspflag_bit21)])
-           print("bit22    | 16bit_UV2        :[" + str(m_isptspflag_bit22) + "] " + bit_par22[(m_isptspflag_bit22)])
-           print("bit23    | Gouraud2         :[" + str(m_isptspflag_bit23) + "] " + bit_par23[(m_isptspflag_bit23)])
-           print("bit24    | Offset2          :[" + str(m_isptspflag_bit24) + "] " + bit_ny[(m_isptspflag_bit24)])
-           print("bit25    | Texture2         :[" + str(m_isptspflag_bit25) + "] " + bit_ny[(m_isptspflag_bit25)])
-           print("bit26    | ZWriteDisable    :[" + str(m_isptspflag_bit26) + "] " + bit_ny[(m_isptspflag_bit26)])
-           print("bit27-28 | CullingMode      :[" + str(m_isptspflag_bit27_28) + "] "+ bit_par27_28[(m_isptspflag_bit27_28)])
-           print("bit29-31 | DepthCompareMode :[" + str(m_isptspflag_bit29_31) + "] "+ bit_par29_31[(m_isptspflag_bit29_31)])
-
+            print("\n" + "-----Mesh_ISP_TSP-----" + "\n")
+            print("bit20    | DcalcCtrl        :[" + str(m_isptspflag_bit20) + "] " + bit_par20[(m_isptspflag_bit20)])
+            print("bit21    | CacheBypass      :[" + str(m_isptspflag_bit21) + "] " + bit_ny[(m_isptspflag_bit21)])
+            print("bit22    | 16bit_UV2        :[" + str(m_isptspflag_bit22) + "] " + bit_par22[(m_isptspflag_bit22)])
+            print("bit23    | Gouraud2         :[" + str(m_isptspflag_bit23) + "] " + bit_par23[(m_isptspflag_bit23)])
+            print("bit24    | Offset2          :[" + str(m_isptspflag_bit24) + "] " + bit_ny[(m_isptspflag_bit24)])
+            print("bit25    | Texture2         :[" + str(m_isptspflag_bit25) + "] " + bit_ny[(m_isptspflag_bit25)])
+            print("bit26    | ZWriteDisable    :[" + str(m_isptspflag_bit26) + "] " + bit_ny[(m_isptspflag_bit26)])
+            print("bit27-28 | CullingMode      :[" + str(m_isptspflag_bit27_28) + "] " + bit_par27_28[
+                (m_isptspflag_bit27_28)])
+            print("bit29-31 | DepthCompareMode :[" + str(m_isptspflag_bit29_31) + "] " + bit_par29_31[
+                (m_isptspflag_bit29_31)])
 
         # 3. mesh tsp parameters bit0-31       /  OMG SEGA, I love ya.
 
@@ -291,56 +315,78 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         m_tspflag_bit26_28 = (m_tspflag >> 26) & 7
         m_tspflag_bit29_31 = (m_tspflag >> 29) & 7
 
+        l_TSP_Header = list()
+        l_TSP_Header.append(m_tspflag_bit29_31)
+        l_TSP_Header.append(m_tspflag_bit26_28)
+        l_TSP_Header.append(m_tspflag_bit25)
+        l_TSP_Header.append(m_tspflag_bit24)
+        l_TSP_Header.append(m_tspflag_bit22_23)
+        l_TSP_Header.append(m_tspflag_bit21)
+        l_TSP_Header.append(m_tspflag_bit20)
+        l_TSP_Header.append(m_tspflag_bit19)
+        l_TSP_Header.append(m_tspflag_bit17_18)
+        l_TSP_Header.append(m_tspflag_bit15_16)
+        l_TSP_Header.append(m_tspflag_bit13_14)
+        l_TSP_Header.append(m_tspflag_bit12)
+        l_TSP_Header.append(m_tspflag_bit8_11)
+        l_TSP_Header.append(m_tspflag_bit6_7)
+        l_TSP_Header.append(m_tspflag_bit3_5)
+        l_TSP_Header.append(m_tspflag_bit0_2)
 
         if debug:
+            # lists of mesh parameters options! Debug only!
 
-         # lists of mesh parameters options! Debug only!
+            bit_par_px_size = ["8 px", "16 px", "32 px", "64 px", "128 px", "256 px", "512 px", "1024 px"]
+            bit_par6_7 = ["Decal [PIXrgb = TEXrgb + OFFSETrgb]  [PIXa = TEXa]",
+                          "Modulate [PIXrgb = COLrgb * TEXrgb + OFFSETrgb]  [PIXa = TEXa]",
+                          "Decal Alpha [PIXrgb = (TEXrgb + TEXa) + (COLrgb * (1-TEXa)) + OFFSETrgb]  [PIXa = COLa]",
+                          "Modulate Alpha [PIXrgb = COLrgb * TEXrgb + OFFSETrgb]  [PIXa = COLa * TEXa]"]
+            bit_par8_11 = ["Illegal", "0,25", "0,50", "0,75", "1,00", "1,25", "1,50", "1,75", "2,00",
+                           "2,25", "2,50", "2,75", "3,00", "3,25", "3,50", "3,75"]
+            bit_par13_14 = ["Point Sampled", "Bilinear Filter", "Tri-linear Pass A", "Tri-linear Pass B"]
+            bit_par15_16 = ["No", "Clamp Y", "Clamp X", "Clamp XY"]
+            bit_par17_18 = ["No", "Flip Y", "Flip X", "Flip X, Y"]
+            bit_par20 = ["Opaque", "Use Alpha"]
+            bit_par21 = ["Underflow", "Overflow"]
+            bit_par22_23 = ["Look Up Table", "Per Vertex", "No Fog", "Look Up Table Mode 2"]
+            bit_par24 = ["No", "Use secondary accumulation buffer as destination"]
+            bit_par25 = ["No", "Use secondary accumulation buffer as source"]
+            bit_par_src_dst = ["Zero (0, 0, 0, 0)", "One (1, 1, 1, 1)", "‘Other’ Color (OR, OG, OB, OA)",
+                               "Inverse ‘Other’ Color (1-OR, 1-OG, 1-OB, 1-OA)", "SRC Alpha (SA, SA, SA, SA)",
+                               "Inverse SRC Alpha (1-SA, 1-SA, 1-SA, 1-SA)", "DST Alpha (DA, DA, DA, DA)",
+                               "Inverse DST Alpha (1-DA, 1-DA, 1-DA, 1-DA)"]
 
-           bit_par_px_size = ["8 px","16 px","32 px","64 px","128 px","256 px","512 px","1024 px"]
-           bit_par6_7 = ["Decal [PIXrgb = TEXrgb + OFFSETrgb]  [PIXa = TEXa]",
-                         "Modulate [PIXrgb = COLrgb * TEXrgb + OFFSETrgb]  [PIXa = TEXa]",
-                         "Decal Alpha [PIXrgb = (TEXrgb + TEXa) + (COLrgb * (1-TEXa)) + OFFSETrgb]  [PIXa = COLa]",
-                         "Modulate Alpha [PIXrgb = COLrgb * TEXrgb + OFFSETrgb]  [PIXa = COLa * TEXa]"]
-           bit_par8_11 = ["Illegal", "0,25","0,50","0,75","1,00","1,25","1,50","1,75","2,00",
-                          "2,25","2,50","2,75","3,00","3,25","3,50","3,75"]
-           bit_par13_14 = ["Point Sampled","Bilinear Filter","Tri-linear Pass A","Tri-linear Pass B"]
-           bit_par15_16 = ["No","Clamp Y","Clamp X","Clamp XY"]
-           bit_par17_18 = ["No","Flip Y","Flip X","Flip X, Y"]
-           bit_par20 = ["Opaque", "Use Alpha"]
-           bit_par21 = ["Underflow","Overflow"]
-           bit_par22_23 = ["Look Up Table","Per Vertex","No Fog","Look Up Table Mode 2"]
-           bit_par24 = ["No","Use secondary accumulation buffer as destination"]
-           bit_par25 = ["No","Use secondary accumulation buffer as source"]
-           bit_par_src_dst = ["Zero (0, 0, 0, 0)","One (1, 1, 1, 1)","‘Other’ Color (OR, OG, OB, OA)",
-                           "Inverse ‘Other’ Color (1-OR, 1-OG, 1-OB, 1-OA)","SRC Alpha (SA, SA, SA, SA)",
-                           "Inverse SRC Alpha (1-SA, 1-SA, 1-SA, 1-SA)","DST Alpha (DA, DA, DA, DA)",
-                           "Inverse DST Alpha (1-DA, 1-DA, 1-DA, 1-DA)"]
+            # Debug printout
 
-
-         # Debug printout
-
-           print("\n"+"-----Mesh_TSP-----"+"\n")
-           print("bit0-2    | Texture V Size (Height) :[" + str(m_tspflag_bit0_2) + "] " + bit_par_px_size[(m_tspflag_bit0_2)])
-           print("bit3-5    | Texture U Size (Width)  :[" + str(m_tspflag_bit3_5) + "] " + bit_par_px_size[(m_tspflag_bit3_5)])
-           print("bit6-7    | Texture / Shading       :[" + str(m_tspflag_bit6_7) + "] " + bit_par6_7[(m_tspflag_bit6_7)])
-           print("bit8-11   | Mipmap D Adjust         :[" + str(m_tspflag_bit8_11) + "] " + bit_par8_11[(m_tspflag_bit8_11)])
-           print("bit12     | Super Sampling          :[" + str(m_tspflag_bit12) + "] " + bit_ny[(m_tspflag_bit12)])
-           print("bit13-14  | Filter                  :[" + str(m_tspflag_bit13_14) + "] " + bit_par13_14[(m_tspflag_bit13_14)])
-           print("bit15-16  | Clamp UV                :[" + str(m_tspflag_bit15_16) + "] " + bit_par15_16[(m_tspflag_bit15_16)])
-           print("bit17-18  | Flip UV                 :[" + str(m_tspflag_bit17_18) + "] " + bit_par17_18[(m_tspflag_bit17_18)])
-           print("bit19     | Ignore Tex.Alpha        :[" + str(m_tspflag_bit19) + "] " + bit_ny[(m_tspflag_bit19)])
-           print("bit20     | Use Alpha               :[" + str(m_tspflag_bit20) + "] " + bit_par20[(m_tspflag_bit20)])
-           print("bit21     | Color Clamp             :[" + str(m_tspflag_bit21) + "] " + bit_par21[(m_tspflag_bit21)])
-           print("bit22-23  | Fog Control             :[" + str(m_tspflag_bit22_23) + "] " + bit_par22_23[(m_tspflag_bit22_23)])
-           print("bit24     | DST Select              :[" + str(m_tspflag_bit24) + "] " + bit_par24[(m_tspflag_bit24)])
-           print("bit25     | SRC Select              :[" + str(m_tspflag_bit25) + "] " + bit_par25[(m_tspflag_bit25)])
-           print("bit26-28  | DST Alpha               :[" + str(m_tspflag_bit26_28) + "] " + bit_par_src_dst[(m_tspflag_bit26_28)])
-           print("bit29-31  | SRC Alpha               :[" + str(m_tspflag_bit29_31) + "] " + bit_par_src_dst[(m_tspflag_bit29_31)])
-
-
+            print("\n" + "-----Mesh_TSP-----" + "\n")
+            print("bit0-2    | Texture V Size (Height) :[" + str(m_tspflag_bit0_2) + "] " + bit_par_px_size[
+                (m_tspflag_bit0_2)])
+            print("bit3-5    | Texture U Size (Width)  :[" + str(m_tspflag_bit3_5) + "] " + bit_par_px_size[
+                (m_tspflag_bit3_5)])
+            print("bit6-7    | Texture / Shading       :[" + str(m_tspflag_bit6_7) + "] " + bit_par6_7[
+                (m_tspflag_bit6_7)])
+            print("bit8-11   | Mipmap D Adjust         :[" + str(m_tspflag_bit8_11) + "] " + bit_par8_11[
+                (m_tspflag_bit8_11)])
+            print("bit12     | Super Sampling          :[" + str(m_tspflag_bit12) + "] " + bit_ny[(m_tspflag_bit12)])
+            print("bit13-14  | Filter                  :[" + str(m_tspflag_bit13_14) + "] " + bit_par13_14[
+                (m_tspflag_bit13_14)])
+            print("bit15-16  | Clamp UV                :[" + str(m_tspflag_bit15_16) + "] " + bit_par15_16[
+                (m_tspflag_bit15_16)])
+            print("bit17-18  | Flip UV                 :[" + str(m_tspflag_bit17_18) + "] " + bit_par17_18[
+                (m_tspflag_bit17_18)])
+            print("bit19     | Ignore Tex.Alpha        :[" + str(m_tspflag_bit19) + "] " + bit_ny[(m_tspflag_bit19)])
+            print("bit20     | Use Alpha               :[" + str(m_tspflag_bit20) + "] " + bit_par20[(m_tspflag_bit20)])
+            print("bit21     | Color Clamp             :[" + str(m_tspflag_bit21) + "] " + bit_par21[(m_tspflag_bit21)])
+            print("bit22-23  | Fog Control             :[" + str(m_tspflag_bit22_23) + "] " + bit_par22_23[
+                (m_tspflag_bit22_23)])
+            print("bit24     | DST Select              :[" + str(m_tspflag_bit24) + "] " + bit_par24[(m_tspflag_bit24)])
+            print("bit25     | SRC Select              :[" + str(m_tspflag_bit25) + "] " + bit_par25[(m_tspflag_bit25)])
+            print("bit26-28  | DST Alpha               :[" + str(m_tspflag_bit26_28) + "] " + bit_par_src_dst[
+                (m_tspflag_bit26_28)])
+            print("bit29-31  | SRC Alpha               :[" + str(m_tspflag_bit29_31) + "] " + bit_par_src_dst[
+                (m_tspflag_bit29_31)])
 
         # 4. texture control bit0-31         / 0-24 texture address , always 0
-
 
         m_tctflag = read_uint32_buff()
         m_tctflag_bit0_24 = (m_tctflag >> 0) & 23
@@ -350,25 +396,36 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         m_tctflag_bit30 = (m_tctflag >> 30) & 1
         m_tctflag_bit31 = (m_tctflag >> 31) & 1
 
+        l_texCtrl_Header = list()
+        l_texCtrl_Header.append(m_tctflag_bit31)
+        l_texCtrl_Header.append(m_tctflag_bit30)
+        l_texCtrl_Header.append(m_tctflag_bit27_29)
+        l_texCtrl_Header.append(m_tctflag_bit26)
+        l_texCtrl_Header.append(m_tctflag_bit25)
+        l_texCtrl_Header.append(m_tctflag_bit0_24)
+
         if debug:
+            # lists of mesh parameters options! Debug only!
 
-         # lists of mesh parameters options! Debug only!
+            tctflag_par_bit0_24 = [" "]
+            tctflag_par_bit25 = ["No", "Use Texture Control for U Stride"]
+            tctflag_par_bit26 = ["Twiddled", "Non-Twiddled"]
+            tctflag_par_bit27_29 = ["ARGB1555", "RGB565", "ARGB4444", "YUV422", "Bump Map",
+                                    "4 BPP Palette", "8 BPP Palette", "Reserved"]
 
-           tctflag_par_bit0_24 = [" "]
-           tctflag_par_bit25 = ["No", "Use Texture Control for U Stride"]
-           tctflag_par_bit26 = ["Twiddled","Non-Twiddled"]
-           tctflag_par_bit27_29 = ["ARGB1555","RGB565","ARGB4444","YUV422","Bump Map",
-                                     "4 BPP Palette","8 BPP Palette","Reserved"]
+            # Debug printout
 
-         # Debug printout
-
-           print("\n"+"-----Mesh_Texture_Control_Flags-----"+"\n")
-           print("bit0-24  | Texture Address   :[" + str(m_tctflag_bit0_24) + "] " + tctflag_par_bit0_24[(m_tctflag_bit0_24)])
-           print("bit25    | StrideSelect      :[" + str(m_tctflag_bit25) + "] " + tctflag_par_bit25[(m_tctflag_bit25)])
-           print("bit26    | Scan Order        :[" + str(m_tctflag_bit26) + "] " + tctflag_par_bit26[(m_tctflag_bit26)])
-           print("bit27_29 | Pixel Format      :[" + str(m_tctflag_bit27_29) + "] " + tctflag_par_bit27_29[(m_tctflag_bit27_29)])
-           print("bit30    | VQ Compressed     :[" + str(m_tctflag_bit30) + "] " + bit_ny[(m_tctflag_bit30)])
-           print("bit31    | Mip Mapped        :[" + str(m_tctflag_bit31) + "] " + bit_ny[(m_tctflag_bit31)])
+            print("\n" + "-----Mesh_Texture_Control_Flags-----" + "\n")
+            print("bit0-24  | Texture Address   :[" + str(m_tctflag_bit0_24) + "] " + tctflag_par_bit0_24[
+                (m_tctflag_bit0_24)])
+            print(
+                "bit25    | StrideSelect      :[" + str(m_tctflag_bit25) + "] " + tctflag_par_bit25[(m_tctflag_bit25)])
+            print(
+                "bit26    | Scan Order        :[" + str(m_tctflag_bit26) + "] " + tctflag_par_bit26[(m_tctflag_bit26)])
+            print("bit27_29 | Pixel Format      :[" + str(m_tctflag_bit27_29) + "] " + tctflag_par_bit27_29[
+                (m_tctflag_bit27_29)])
+            print("bit30    | VQ Compressed     :[" + str(m_tctflag_bit30) + "] " + bit_ny[(m_tctflag_bit30)])
+            print("bit31    | Mip Mapped        :[" + str(m_tctflag_bit31) + "] " + bit_ny[(m_tctflag_bit31)])
 
         # 5. mesh centroid x,y,z, bound radius
 
@@ -378,7 +435,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         m_bound_radius = read_float_buff()
 
         if debug:
-            print("\n"+"-----Mesh_Centroid_&_Bound_Radius-----"+"\n")
+            print("\n" + "-----Mesh_Centroid_&_Bound_Radius-----" + "\n")
             print("mesh_centroid: x = " + (str(m_centr_x)))
             print("mesh_centroid: y = " + (str(m_centr_y)))
             print("mesh_centroid: z = " + (str(m_centr_z)))
@@ -395,8 +452,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             else:
                 t_var = str(m_texID)
 
-
-            print("\n"+"-----Mesh_Texture_ID-----"+"\n")
+            print("\n" + "-----Mesh_Texture_ID-----" + "\n")
             print("Texture ID: " + str(t_var))
 
         # 7. texture shading
@@ -415,7 +471,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             else:
                 t_var2 = (f"Specular Intensity: {spec_int}")
 
-            print("\n"+"-----Mesh_Texture_Shading-----"+"\n")
+            print("\n" + "-----Mesh_Texture_Shading-----" + "\n")
             print(f"[{m_tex_shading}] {t_var2}")
 
         # 8. texture ambient lighting
@@ -425,7 +481,6 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         if debug:
             print(f"Texture Ambient Light: {m_tex_amb}")
 
-
         # 9. base color ARGB
 
         m_col_base_A = read_float_buff()
@@ -434,8 +489,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         m_col_base_B = read_float_buff()
 
         if debug:
-
-            print("\n"+"-----Mesh_Base_Colors_ARGB-----"+"\n")
+            print("\n" + "-----Mesh_Base_Colors_ARGB-----" + "\n")
             print(f"Alpha: {m_col_base_A}")
             print(f"Red  : {m_col_base_R}")
             print(f"Green: {m_col_base_G}")
@@ -462,9 +516,8 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         if debug:
             print("\n" + "-----Mesh_Size-----" + "\n")
             print(f"Mesh Data Size: {hex(mesh_end_offset)}")
-
-
-
+        m_Headers = (l_Parameter_Header, l_ISP_TSP_Header, l_TSP_Header, l_texCtrl_Header)
+        return m_Headers
 
     ##############################
     # Parse polygon bitflags     #
@@ -485,38 +538,34 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         p_flag_bit8 = (f_type >> 8) & 1
 
         if debug:
+            # lists of mesh parameters options! Debug only!
 
-         # lists of mesh parameters options! Debug only!
+            bit_ppar0_1 = ["clockwise", "counter-clock", "single-side (clockwise)", "double-sided (counter-clockwise)"]
+            bit_ppar6 = ["No (Flat)", "Yes"]
+            bit_ppar7 = ["Send global params", "Don't send global params"]
 
-           bit_ppar0_1 = ["clockwise", "counter-clock", "single-side (clockwise)","double-sided (counter-clockwise)"]
-           bit_ppar6 = ["No (Flat)","Yes"]
-           bit_ppar7 = ["Send global params","Don't send global params"]
+            # Debug printout
 
-         # Debug printout
-
-           print("\n"+"-----------------------------")
-           print(f"     Poly {f} Flags        ")
-           print("-----------------------------")
-           print("bit0-1   | Culling      :[" + str(p_flag_bit0_1) + "] " + bit_ppar0_1[(p_flag_bit0_1)])
-           print("bit2     | Sprite(Quad) :[" + str(p_flag_bit2) + "] " + bit_ny[(p_flag_bit2)])
-           print("bit3     | Triangles    :[" + str(p_flag_bit3) + "] " + bit_ny[(p_flag_bit3)])
-           print("bit4     | Strip        :[" + str(p_flag_bit4) + "] " + bit_ny[(p_flag_bit4)])
-           print("bit5     | Super Index  :[" + str(p_flag_bit5) + "] " + bit_ny[(p_flag_bit5)])
-           print("bit6     | Gouraud      :[" + str(p_flag_bit6) + "] " + bit_ppar6[(p_flag_bit6)])
-           print("bit7     | NOT Send GP  :[" + str(p_flag_bit7) + "] " + bit_ppar7[(p_flag_bit7)])
-           print("bit8     | Env.Mapping  :[" + str(p_flag_bit8) + "] " + bit_ny[(p_flag_bit8)])
-
-
+            print("\n" + "-----------------------------")
+            print(f"     Poly {f} Flags        ")
+            print("-----------------------------")
+            print("bit0-1   | Culling      :[" + str(p_flag_bit0_1) + "] " + bit_ppar0_1[(p_flag_bit0_1)])
+            print("bit2     | Sprite(Quad) :[" + str(p_flag_bit2) + "] " + bit_ny[(p_flag_bit2)])
+            print("bit3     | Triangles    :[" + str(p_flag_bit3) + "] " + bit_ny[(p_flag_bit3)])
+            print("bit4     | Strip        :[" + str(p_flag_bit4) + "] " + bit_ny[(p_flag_bit4)])
+            print("bit5     | Super Index  :[" + str(p_flag_bit5) + "] " + bit_ny[(p_flag_bit5)])
+            print("bit6     | Gouraud      :[" + str(p_flag_bit6) + "] " + bit_ppar6[(p_flag_bit6)])
+            print("bit7     | NOT Send GP  :[" + str(p_flag_bit7) + "] " + bit_ppar7[(p_flag_bit7)])
+            print("bit8     | Env.Mapping  :[" + str(p_flag_bit8) + "] " + bit_ny[(p_flag_bit8)])
 
     ######################################
     #  Zocker_160 code, do not change it!       /  I love your code buddy, it's awesome, really.
     ######################################
 
-
     meshes = list()
     mesh_faces = list()
     mesh_colors = list()
-
+    m_headr_grps = list()
     # nlfile.seek(0x68)
     # nlfile.seek(0x64)
     nlfile.seek(0x48)
@@ -531,30 +580,25 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     if debug: print("MESH END offset START:", mesh_end_offset)
     m = 0
 
-
     # while not EOF
     while nlfile.read(0x4) != b'\x00\x00\x00\x00':
 
         if m == 0:  # first loop needs special treatment
-            #nlfile.seek(nlfile.tell() - 0x4, 0x0)
-            nlfile.seek(0x18)    # first mesh parameters always start at 0x18
-            mesh_param()
+            # nlfile.seek(nlfile.tell() - 0x4, 0x0)
+            nlfile.seek(0x18)  # first mesh parameters always start at 0x18
+            m_headr_grps.append(mesh_param())
 
 
         else:
             if debug:
                 print(nlfile.tell())
 
-            savepos = nlfile.seek(nlfile.tell() - 0x4, 0x0)     # Save current position - 0x4, or won't read mesh data
-            mesh_param()                                        # Get mesh parameters bitflags
-            nlfile.seek(savepos + 0x4)                          # Go to savepos to resume reading file
-
-
+            savepos = nlfile.seek(nlfile.tell() - 0x4, 0x0)  # Save current position - 0x4, or won't read mesh data
+            m_headr_grps.append(mesh_param())  # Get mesh parameters bitflags
+            nlfile.seek(savepos + 0x4)  # Go to savepos to resume reading file
 
             # read RGB color
             nlfile.seek(0x4C - 0x20, 0x1)
-
-
 
             mesh_colors.append((read_float_buff(), read_float_buff(), read_float_buff()))
             nlfile.seek(0x10, 0x1)
@@ -578,13 +622,13 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
 
             if debug:
                 print(face_type)
-                poly_flags()    # prints all poly bit flags
+                poly_flags()  # prints all poly bit flags
 
-            if (((int.from_bytes(face_type, "little")) >> 3) & 1) == 1:  # check face type, if bit3 flag is set to 1, it's triangles!
+            if (((int.from_bytes(face_type,
+                                 "little")) >> 3) & 1) == 1:  # check face type, if bit3 flag is set to 1, it's triangles!
                 mult = True
             else:
                 mult = False
-
 
             n_face = read_uint32_buff()  # number of faces for this chunk (depending on the type it needs either one or three vertices / face)
             if mult:
@@ -592,7 +636,6 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                 if debug: print("triple number of vertices")
             else:
                 n_vertex = n_face
-
 
             if debug: print(n_vertex)
             print()
@@ -618,7 +661,6 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
 
                 vertex.append(read_point3_buff())
 
-
                 ###########################
                 #
                 # if m_tex_shading == -3 , vertex format is:
@@ -630,7 +672,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                     norm_sint8_x = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
                     norm_sint8_y = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
                     norm_sint8_z = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
-                    nlfile.read(0x1)     # zero byte
+                    nlfile.read(0x1)  # zero byte
 
                     vtx_col1_A = nlfile.read(0x1)
                     vtx_col1_R = nlfile.read(0x1)
@@ -643,12 +685,12 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
 
                     normal.append((norm_sint8_x, norm_sint8_y, norm_sint8_z))
 
-                    if debug: print(f"(normals: x,y,z: {normal}\nvtx_col1: ARGB:{vtx_col1_A}{vtx_col1_R}{vtx_col1_G}{vtx_col1_B}\n"
-                                    f"vtx_col2: ARGB:{vtx_col2_A}{vtx_col2_R}{vtx_col2_G}{vtx_col2_B}")
+                    if debug: print(
+                        f"(normals: x,y,z: {normal}\nvtx_col1: ARGB:{vtx_col1_A}{vtx_col1_R}{vtx_col1_G}{vtx_col1_B}\n"
+                        f"vtx_col2: ARGB:{vtx_col2_A}{vtx_col2_R}{vtx_col2_G}{vtx_col2_B}")
 
                 else:
-                    normal.append(read_point3_buff())      # if m_tex_shading != -3, read normals as regular floats
-
+                    normal.append(read_point3_buff())  # if m_tex_shading != -3, read normals as regular floats
 
                 texture_uv.append(read_point2_buff())
 
@@ -679,9 +721,14 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                 for j in range(n_vertex - 2):
                     i = vertex_index_last + j
 
-                    x = i
-                    y = i + 1
-                    z = i + 2
+                    if (i % 2 == 1):
+                        x = i + 1
+                        y = i
+                        z = i + 2
+                    else:
+                        x = i
+                        y = i + 1
+                        z = i + 2
 
                     faces_index.append([x, y, z])
 
@@ -712,7 +759,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         for face in mesh['face_vertex']:
             for point in face['point']:
                 # swap Y and Z axis
-                points.append(Vector((point[xVal], point[zVal], point[yVal])))
+                points.append(Vector((point[xVal], point[yVal], point[zVal])))
             for texture in face['texture']:
                 textures.append(Vector(texture))
 
@@ -736,7 +783,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     # mesh_faces[mesh_index][face_index][0|1|2]
     ####
 
-    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors
+    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors, m_headr_grps
 
 
 ########################
@@ -761,7 +808,7 @@ def redraw():
             area.tag_redraw()
 
 
-def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list,
+def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, mesh_headers: list,
                  parent_col: bpy.types.Collection, scale: float, debug=False):
     if debug: print("meshes:", len(meshes))
 
@@ -785,8 +832,53 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         # create object out of mesh
         new_object = bpy.data.objects.new(f"object_{i}", new_mesh)
         new_object.scale = [scale] * 3
+        new_object.naomi_param.paramType = str(mesh_headers[i][0][0])
+        new_object.naomi_param.endOfStrip = str(mesh_headers[i][0][1])
+        new_object.naomi_param.listType = str(mesh_headers[i][0][2])
+        new_object.naomi_param.grpEn = str(mesh_headers[i][0][3])
+        new_object.naomi_param.stripLen = str(mesh_headers[i][0][4])
+        new_object.naomi_param.usrClip = str(mesh_headers[i][0][5])
+        new_object.naomi_param.shadow = str(mesh_headers[i][0][6])
+        new_object.naomi_param.volume = str(mesh_headers[i][0][7])
+        new_object.naomi_param.colType = str(mesh_headers[i][0][8])
+        new_object.naomi_param.textureUsage = str(mesh_headers[i][0][9])
+        new_object.naomi_param.offsColorUsage = str(mesh_headers[i][0][10])
+        new_object.naomi_param.gouraudShdUsage = str(mesh_headers[i][0][11])
+        new_object.naomi_param.uvDataSize = str(mesh_headers[i][0][12])
 
-        # print("new object", new_object.name)
+        new_object.naomi_isp_tsp.depthCompare = str(mesh_headers[i][1][0])
+        new_object.naomi_isp_tsp.culling = str(mesh_headers[i][1][1])
+        new_object.naomi_isp_tsp.zWrite = str(mesh_headers[i][1][2])
+        new_object.naomi_isp_tsp.textureUsage = str(mesh_headers[i][1][3])
+        new_object.naomi_isp_tsp.offsColorUsage = str(mesh_headers[i][1][4])
+        new_object.naomi_isp_tsp.gouraudShdUsage = str(mesh_headers[i][1][5])
+        new_object.naomi_isp_tsp.uvDataSize = str(mesh_headers[i][1][6])
+        new_object.naomi_isp_tsp.cacheBypass = str(mesh_headers[i][1][7])
+        new_object.naomi_isp_tsp.dCalcCtrl = str(mesh_headers[i][1][8])
+
+        new_object.naomi_tsp.srcAlpha = str(mesh_headers[i][2][0])
+        new_object.naomi_tsp.dstAlpha = str(mesh_headers[i][2][1])
+        new_object.naomi_tsp.srcSelect = str(mesh_headers[i][2][2])
+        new_object.naomi_tsp.dstSelect = str(mesh_headers[i][2][3])
+        new_object.naomi_tsp.fogOp = str(mesh_headers[i][2][4])
+        new_object.naomi_tsp.colorClamp = str(mesh_headers[i][2][5])
+        new_object.naomi_tsp.alphaOp = str(mesh_headers[i][2][6])
+        new_object.naomi_tsp.alphaTexOp = str(mesh_headers[i][2][7])
+        new_object.naomi_tsp.uvFlip = str(mesh_headers[i][2][8])
+        new_object.naomi_tsp.uvClamp = str(mesh_headers[i][2][9])
+        new_object.naomi_tsp.filter = str(mesh_headers[i][2][10])
+        new_object.naomi_tsp.supSample = str(mesh_headers[i][2][11])
+        new_object.naomi_tsp.mipmapDAdj = str(mesh_headers[i][2][12])
+        new_object.naomi_tsp.texShading = str(mesh_headers[i][2][13])
+        new_object.naomi_tsp.texUSize = str(mesh_headers[i][2][14])
+        new_object.naomi_tsp.texVSize = str(mesh_headers[i][2][15])
+
+        new_object.naomi_texCtrl.mipMapped = str(mesh_headers[i][3][0])
+        new_object.naomi_texCtrl.vqCompressed = str(mesh_headers[i][3][1])
+        new_object.naomi_texCtrl.pixelFormat = str(mesh_headers[i][3][2])
+        new_object.naomi_texCtrl.scanOrder = str(mesh_headers[i][3][3])
+        new_object.naomi_texCtrl.texCtrlUstride = str(mesh_headers[i][3][4])
+        print("new object", new_object.name)
 
         # add viewport color to object
         new_mat = bpy.data.materials.new(f"object_{i}_mat")
@@ -815,13 +907,14 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool):
     filename = filepath.split(os.sep)[-1]
     print(filename)
 
-    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors = parse_nl(NL, debug=debug)
+    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s = parse_nl(NL, debug=debug)
 
     # create own collection for each imported file
     obj_col = bpy.data.collections.new(filename)
     bpy.context.scene.collection.children.link(obj_col)
 
-    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, parent_col=obj_col, scale=scaling,
+    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, mesh_headers=mesh_header_s,
+                        parent_col=obj_col, scale=scaling,
                         debug=debug)
 
 
@@ -862,12 +955,14 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
             f.seek(start_offset)
             if debug: print("NEW child start offset:", start_offset)
             if debug: print("NEW child end offset:", end_offset)
-            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors = parse_nl(f.read(end_offset - start_offset), debug=debug)
+            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s = parse_nl(
+                f.read(end_offset - start_offset), debug=debug)
 
             sub_col = bpy.data.collections.new(f"child_{i}")
             obj_col.children.link(sub_col)
 
-            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, parent_col=sub_col,
+            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors,
+                                mesh_headers=mesh_header_s, parent_col=sub_col,
                                 scale=scaling, debug=debug): return False
             f.seek(st_p)
             start_offset = end_offset
