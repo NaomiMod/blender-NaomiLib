@@ -105,10 +105,13 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     #############################
 
     # Read Model Header Global_Flag0, to determine model format
-
+    
+    gflag_headers = list ()
+    
     nlfile.seek(0x0)
     gflag0 = (nlfile.read(0x1))
-
+    g_flag0 = int.from_bytes(gflag0, 'little')
+    gflag_headers.append(g_flag0)
     if debug:
         print("#---------------------------#")
         print("#    Naomi_Library_Model    #")
@@ -126,7 +129,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         print("\n")
 
     # Read Model Header Global_Flag1, to determine model format
-
+    
     nlfile.seek(0x4)
     gflag1 = (nlfile.read(0x2))
     gflag1 = int.from_bytes(gflag1, "little")
@@ -139,7 +142,11 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     gflag1_bit6 = (gflag1 >> 6) & 1
     gflag1_bit7 = (gflag1 >> 7) & 1
     gflag1_bit8 = (gflag1 >> 8) & 1
-
+    
+    gflag_headers.append(gflag1_bit1)
+    gflag_headers.append(gflag1_bit2)
+    gflag_headers.append(gflag1_bit3)
+    gflag_headers.append(gflag1_bit4)
     if debug:
         bit_ny = ["No ", "Yes"]  # It's just a list to show No or Yes, based on bit value 0 or 1
 
@@ -169,7 +176,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         print("obj_bnd_radius: = " + (str(obj_bound_radius)))
 
     ###################
-    # mesh parameters
+    # mesh parameters #
     ###################
 
     #### mesh parameters data structure
@@ -180,10 +187,10 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     # 10.[Offset_Alpha|Red|Green|Blue]                                          # tot.4 floats (offset ARGB)
     # 11.[mesh_size]                                                            # uint32 (mesh size)
     # ###
-
+    
     def mesh_param():
 
-        print(f"current position: {hex(nlfile.tell())}")
+        # print(f"current position: {hex(nlfile.tell())}")
 
         # 1. mesh parameters bit0-31
 
@@ -516,6 +523,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         if debug:
             print("\n" + "-----Mesh_Size-----" + "\n")
             print(f"Mesh Data Size: {hex(mesh_end_offset)}")
+            
         m_Headers = (l_Parameter_Header, l_ISP_TSP_Header, l_TSP_Header, l_texCtrl_Header)
         return m_Headers
 
@@ -638,7 +646,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                 n_vertex = n_face
 
             if debug: print(n_vertex)
-            print()
+            # print()
             vertex = list()
             normal = list()
             texture_uv = list()
@@ -700,7 +708,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             # print(normal)
             # print(texture_uv)
 
-            if debug: print("current position:", nlfile.tell())
+            # if debug: print("current position:", nlfile.tell())
 
             faces_vertex.append({
                 'point': vertex,
@@ -783,7 +791,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     # mesh_faces[mesh_index][face_index][0|1|2]
     ####
 
-    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors, m_headr_grps
+    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors, m_headr_grps, gflag_headers
 
 
 ########################
@@ -873,8 +881,8 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_object.naomi_tsp.texUSize = str(mesh_headers[i][2][14])
         new_object.naomi_tsp.texVSize = str(mesh_headers[i][2][15])
 
-        new_object.naomi_texCtrl.mipMapped = str(mesh_headers[i][3][0])
-        new_object.naomi_texCtrl.vqCompressed = str(mesh_headers[i][3][1])
+        new_object.naomi_texCtrl.mipMapped = mesh_headers[i][3][0]
+        new_object.naomi_texCtrl.vqCompressed = mesh_headers[i][3][1]
         new_object.naomi_texCtrl.pixelFormat = str(mesh_headers[i][3][2])
         new_object.naomi_texCtrl.scanOrder = str(mesh_headers[i][3][3])
         new_object.naomi_texCtrl.texCtrlUstride = str(mesh_headers[i][3][4])
@@ -905,12 +913,19 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool):
 
     print(filepath)
     filename = filepath.split(os.sep)[-1]
-    print(filename)
+    print('\n\n' + filename + '\n\n')
 
-    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s = parse_nl(NL, debug=debug)
-
+    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, debug=debug)
+    
     # create own collection for each imported file
     obj_col = bpy.data.collections.new(filename)
+    
+    obj_col.gp0.objFormat = str(g_headers[0])
+    obj_col.gp1.skp1stSrcOp = g_headers[1]
+    obj_col.gp1.envMap = g_headers[2]
+    obj_col.gp1.pltTex = g_headers[3]
+    obj_col.gp1.bumpMap = g_headers[4]
+    
     bpy.context.scene.collection.children.link(obj_col)
 
     return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, mesh_headers=mesh_header_s,
