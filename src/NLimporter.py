@@ -105,9 +105,9 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     #############################
 
     # Read Model Header Global_Flag0, to determine model format
-    
-    gflag_headers = list ()
-    
+
+    gflag_headers = list()
+
     nlfile.seek(0x0)
     gflag0 = (nlfile.read(0x1))
     g_flag0 = int.from_bytes(gflag0, 'little')
@@ -129,7 +129,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         print("\n")
 
     # Read Model Header Global_Flag1, to determine model format
-    
+
     nlfile.seek(0x4)
     gflag1 = (nlfile.read(0x2))
     gflag1 = int.from_bytes(gflag1, "little")
@@ -142,7 +142,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     gflag1_bit6 = (gflag1 >> 6) & 1
     gflag1_bit7 = (gflag1 >> 7) & 1
     gflag1_bit8 = (gflag1 >> 8) & 1
-    
+
     gflag_headers.append(gflag1_bit1)
     gflag_headers.append(gflag1_bit2)
     gflag_headers.append(gflag1_bit3)
@@ -187,7 +187,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     # 10.[Offset_Alpha|Red|Green|Blue]                                          # tot.4 floats (offset ARGB)
     # 11.[mesh_size]                                                            # uint32 (mesh size)
     # ###
-    
+
     def mesh_param():
 
         # print(f"current position: {hex(nlfile.tell())}")
@@ -494,6 +494,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         m_col_base_R = read_float_buff()
         m_col_base_G = read_float_buff()
         m_col_base_B = read_float_buff()
+        mesh_colors.append((m_col_base_R, m_col_base_G, m_col_base_B))    # for some reason Alpha is not correctly assigned to viewport
 
         if debug:
             print("\n" + "-----Mesh_Base_Colors_ARGB-----" + "\n")
@@ -523,7 +524,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         if debug:
             print("\n" + "-----Mesh_Size-----" + "\n")
             print(f"Mesh Data Size: {hex(mesh_end_offset)}")
-            
+
         m_Headers = (l_Parameter_Header, l_ISP_TSP_Header, l_TSP_Header, l_texCtrl_Header)
         return m_Headers
 
@@ -574,16 +575,8 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     mesh_faces = list()
     mesh_colors = list()
     m_headr_grps = list()
-    # nlfile.seek(0x68)
-    # nlfile.seek(0x64)
-    nlfile.seek(0x48)
 
-    # RGB color of the first mesh
-    mesh_colors.append((read_float_buff(), read_float_buff(), read_float_buff()))
-
-    # skip 0x10 unknown values
-    nlfile.seek(0x10, 0x1)
-
+    nlfile.seek(0x64)   # size of mesh
     mesh_end_offset = read_uint32_buff() + 0x64
     if debug: print("MESH END offset START:", mesh_end_offset)
     m = 0
@@ -592,7 +585,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
     while nlfile.read(0x4) != b'\x00\x00\x00\x00':
 
         if m == 0:  # first loop needs special treatment
-            # nlfile.seek(nlfile.tell() - 0x4, 0x0)
+
             nlfile.seek(0x18)  # first mesh parameters always start at 0x18
             m_headr_grps.append(mesh_param())
 
@@ -601,16 +594,9 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             if debug:
                 print(nlfile.tell())
 
-            savepos = nlfile.seek(nlfile.tell() - 0x4, 0x0)  # Save current position - 0x4, or won't read mesh data
-            m_headr_grps.append(mesh_param())  # Get mesh parameters bitflags
-            nlfile.seek(savepos + 0x4)  # Go to savepos to resume reading file
-
-            # read RGB color
-            nlfile.seek(0x4C - 0x20, 0x1)
-
-            mesh_colors.append((read_float_buff(), read_float_buff(), read_float_buff()))
-            nlfile.seek(0x10, 0x1)
-            # nlfile.seek(0x4C-0x4, 0x1)
+            nlfile.seek(nlfile.tell() - 0x4, 0x0)  # Get ready to read mesh params
+            m_headr_grps.append(mesh_param())      # Get mesh parameters bitflags
+            nlfile.seek(-0x4, 0x1)                 # Continue to read file
 
             if debug: print(nlfile.tell())
 
@@ -709,7 +695,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             # print(texture_uv)
 
             # if debug: print("current position:", nlfile.tell())
-
+            strip_num = -1
             faces_vertex.append({
                 'point': vertex,
                 'normal': normal,
@@ -723,22 +709,24 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                     x = i
                     y = i + 1
                     z = i + 2
+                    strip_num += 1
 
                     faces_index.append([x, y, z])
             else:
                 for j in range(n_vertex - 2):
                     i = vertex_index_last + j
 
-                    if (i % 2 == 1):
-                        x = i + 1
-                        y = i
-                        z = i + 2
-                    else:
+                    if (strip_num % 2 == 1):
                         x = i
                         y = i + 1
                         z = i + 2
-
+                    else:
+                        x = i + 1
+                        y = i
+                        z = i + 2
+                    strip_num += 1
                     faces_index.append([x, y, z])
+
 
             f += 1
             vertex_index_last += n_vertex
@@ -916,16 +904,16 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool):
     print('\n\n' + filename + '\n\n')
 
     mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, debug=debug)
-    
+
     # create own collection for each imported file
     obj_col = bpy.data.collections.new(filename)
-    
+
     obj_col.gp0.objFormat = str(g_headers[0])
     obj_col.gp1.skp1stSrcOp = g_headers[1]
     obj_col.gp1.envMap = g_headers[2]
     obj_col.gp1.pltTex = g_headers[3]
     obj_col.gp1.bumpMap = g_headers[4]
-    
+
     bpy.context.scene.collection.children.link(obj_col)
 
     return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, mesh_headers=mesh_header_s,
