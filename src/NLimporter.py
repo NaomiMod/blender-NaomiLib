@@ -100,6 +100,18 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         else:
             return num / min
 
+    # specular to float   # WIP
+    def spec_to_float(num: int) -> float:
+
+        if num == 0x0:
+            return (1)
+        elif num <= 0x5:
+            return (1 / num)
+        elif num > 0x5:
+            return ((1 / num) + (0.02))
+
+
+
     #############################
     # model header function
     #############################
@@ -463,9 +475,11 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             print("Texture ID: " + str(t_var))
 
         # 7. texture shading
-        global m_tex_shading
+        global m_tex_shading,spec_int
         m_tex_shading = read_sint32_buff()
-        spec_int = m_tex_shading ** 10 / 10
+        # spec_int = m_tex_shading / 10     Original, but currently not giving accurate results
+        spec_int = spec_to_float(m_tex_shading) # WIP
+
 
         if debug:
 
@@ -494,7 +508,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         m_col_base_R = read_float_buff()
         m_col_base_G = read_float_buff()
         m_col_base_B = read_float_buff()
-        mesh_colors.append((m_col_base_R, m_col_base_G, m_col_base_B))    # for some reason Alpha is not correctly assigned to viewport
+        mesh_colors.append((m_col_base_R, m_col_base_G, m_col_base_B, m_col_base_A))    # Blender surface color is RGBA
 
         if debug:
             print("\n" + "-----Mesh_Base_Colors_ARGB-----" + "\n")
@@ -695,7 +709,9 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             # print(texture_uv)
 
             # if debug: print("current position:", nlfile.tell())
-            strip_num = -1
+
+            strip_counter = -1        # Reset start of strip
+
             faces_vertex.append({
                 'point': vertex,
                 'normal': normal,
@@ -709,14 +725,14 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                     x = i
                     y = i + 1
                     z = i + 2
-                    strip_num += 1
 
                     faces_index.append([x, y, z])
+                    strip_counter += 1
             else:
                 for j in range(n_vertex - 2):
                     i = vertex_index_last + j
 
-                    if (strip_num % 2 == 1):
+                    if (strip_counter % 2 == 1):
                         x = i
                         y = i + 1
                         z = i + 2
@@ -724,8 +740,10 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                         x = i + 1
                         y = i
                         z = i + 2
-                    strip_num += 1
+
                     faces_index.append([x, y, z])
+                    strip_counter += 1
+
 
 
             f += 1
@@ -878,8 +896,9 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
 
         # add viewport color to object
         new_mat = bpy.data.materials.new(f"object_{i}_mat")
-        new_mat.diffuse_color = meshColors[i] + (1,)
-        new_mat.roughness = 1
+        new_mat.diffuse_color = meshColors[i]
+        print(f"new_mat.diffuse_color: {new_mat.diffuse_color} , mesh_colors: {meshColors}")
+        new_mat.roughness = spec_int
         new_mat.metallic = 0.5
 
         new_object.data.materials.append(new_mat)
@@ -971,5 +990,6 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
             start_offset = end_offset
 
     if debug: print("NUMBER OF CHILDREN:", num_child_models)
+
 
     return True
