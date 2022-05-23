@@ -111,6 +111,12 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             return ((1 / num) + (0.02))
 
 
+    # convert vertex hex color to blender float
+    def col_hex_to_float(num: int) -> float:
+        max = 0xFF
+        return num / max
+
+
 
     #############################
     # model header function
@@ -581,6 +587,44 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             print("bit7     | NOT Send GP  :[" + str(p_flag_bit7) + "] " + bit_ppar7[(p_flag_bit7)])
             print("bit8     | Env.Mapping  :[" + str(p_flag_bit8) + "] " + bit_ny[(p_flag_bit8)])
 
+
+    ##############################
+    # Parse Type C Vertex        #
+    ##############################
+
+    ###########################
+    #
+    # if m_tex_shading == -3, it is Type C:
+    # [xVal|yVal|zVal],[sint8 nx,ny,nz],[0x00],[vtx_color1],[vtx color2],[U],[V]
+    #
+    # note, vtx_color2 is always the same of vtx_color1. Color format is Hex: BGRA8888
+    #
+    ###########################
+
+    def type_c():
+        norm_sint8_x = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        norm_sint8_y = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        norm_sint8_z = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        nlfile.read(0x1)  # zero byte
+
+        vtx_col1_A = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col1_R = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col1_G = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col1_B = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col2_A = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col2_R = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col2_G = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col2_B = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+
+        normal.append((norm_sint8_x, norm_sint8_y, norm_sint8_z))
+        vert_col.append((vtx_col1_R, vtx_col1_G, vtx_col1_B, vtx_col2_A))
+
+        if debug: print(
+            f"(normals: x,y,z: {normal}\nvtx_col1: ARGB:{vtx_col1_A} {vtx_col1_R} {vtx_col1_G} {vtx_col1_B}\n"
+            f"vtx_col2: ARGB:{vtx_col2_A} {vtx_col2_R} {vtx_col2_G} {vtx_col2_B}")
+
+
+
     ######################################
     #  Zocker_160 code, do not change it!       /  I love your code buddy, it's awesome, really.
     ######################################
@@ -609,7 +653,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                 print(nlfile.tell())
 
             nlfile.seek(nlfile.tell() - 0x4, 0x0)  # Get ready to read mesh params
-            m_headr_grps.append(mesh_param())      # Get mesh parameters bitflags
+            m_headr_grps.append(mesh_param())      # read mesh header parameters
             nlfile.seek(-0x4, 0x1)                 # Continue to read file
 
             if debug: print(nlfile.tell())
@@ -632,8 +676,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                 print(face_type)
                 poly_flags()  # prints all poly bit flags
 
-            if (((int.from_bytes(face_type,
-                                 "little")) >> 3) & 1) == 1:  # check face type, if bit3 flag is set to 1, it's triangles!
+            if (((int.from_bytes(face_type,"little")) >> 3) & 1) == 1:  # check face type, if bit3 flag is set to 1, it's triangles!
                 mult = True
             else:
                 mult = False
@@ -650,6 +693,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             vertex = list()
             normal = list()
             texture_uv = list()
+            vert_col = list()
 
             for _ in range(n_vertex):
                 # check if Type A or Type B vertex
@@ -664,41 +708,14 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
                 else:
                     type_b = False
                     nlfile.seek(entry_pos, 0x0)
-
-                # if vertex
-
                 vertex.append(read_point3_buff())
 
-                ###########################
-                #
-                # if m_tex_shading == -3 , vertex format is:
-                # [xVal|yVal|zVal][sint8 nx,ny,nz,0x00][vtx_color1][vtx color2],[U],[V]      / vertex color is BGRA8888
-                #
-                ###########################
 
-                if m_tex_shading == -3:
-                    norm_sint8_x = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
-                    norm_sint8_y = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
-                    norm_sint8_z = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
-                    nlfile.read(0x1)  # zero byte
-
-                    vtx_col1_A = nlfile.read(0x1)
-                    vtx_col1_R = nlfile.read(0x1)
-                    vtx_col1_G = nlfile.read(0x1)
-                    vtx_col1_B = nlfile.read(0x1)
-                    vtx_col2_A = nlfile.read(0x1)
-                    vtx_col2_R = nlfile.read(0x1)
-                    vtx_col2_G = nlfile.read(0x1)
-                    vtx_col2_B = nlfile.read(0x1)
-
-                    normal.append((norm_sint8_x, norm_sint8_y, norm_sint8_z))
-
-                    if debug: print(
-                        f"(normals: x,y,z: {normal}\nvtx_col1: ARGB:{vtx_col1_A}{vtx_col1_R}{vtx_col1_G}{vtx_col1_B}\n"
-                        f"vtx_col2: ARGB:{vtx_col2_A}{vtx_col2_R}{vtx_col2_G}{vtx_col2_B}")
-
+                if m_tex_shading == -3:     # It's TypeC vertex format, get sint8 normals and vert colors
+                    type_c()
                 else:
-                    normal.append(read_point3_buff())  # if m_tex_shading != -3, read normals as regular floats
+                    normal.append(read_point3_buff())
+                    
 
                 texture_uv.append(read_point2_buff())
 
@@ -779,6 +796,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
 
         mesh_vertices.append(points)
         mesh_uvs.append(textures)
+        # print(f"vertex_color list: {vert_col}")
 
     if debug: print("number of meshes found:", m)
     # print(meshes[0]['face_vertex'][0]['point'][1])
@@ -897,7 +915,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         # add viewport color to object
         new_mat = bpy.data.materials.new(f"object_{i}_mat")
         new_mat.diffuse_color = meshColors[i]
-        print(f"new_mat.diffuse_color: {new_mat.diffuse_color} , mesh_colors: {meshColors}")
+        # print(f"new_mat.diffuse_color: {new_mat.diffuse_color} , mesh_colors: {meshColors}")
         new_mat.roughness = spec_int
         new_mat.metallic = 0.5
 
