@@ -59,7 +59,7 @@ zVal = 2
 # main parse function
 #############################
 
-def parse_nl(nl_bytes: bytes, debug=False) -> list:
+def parse_nl(nl_bytes: bytes, orientation, debug=False) -> list:
     big_endian = False
     nlfile = BytesIO(nl_bytes)
 
@@ -790,7 +790,15 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
         for face in mesh['face_vertex']:
             for point in face['point']:
                 # swap Y and Z axis
-                points.append(Vector((point[xVal], point[yVal], point[zVal])))
+                if orientation == 'X_UP':
+                    points.append(Vector((point[yVal], point[xVal], point[zVal])))
+                elif orientation == 'Y_UP':
+                    points.append(Vector((point[xVal], point[yVal], point[zVal])))
+                elif orientation == 'Z_UP':
+                    points.append(Vector((point[xVal], point[zVal], point[yVal])))
+                else:
+                    print("Something wrong")
+                
             for texture in face['texture']:
                 textures.append(Vector(texture))
 
@@ -932,7 +940,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
 # MAIN functions
 ########################
 
-def main_function_import_file(self, filepath: str, scaling: float, debug: bool):
+def main_function_import_file(self, filepath: str, scaling: float, debug: bool, orientation):
     with open(filepath, "rb") as f:
         NL = f.read(-1)
 
@@ -940,7 +948,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool):
     filename = filepath.split(os.sep)[-1]
     print('\n\n' + filename + '\n\n')
 
-    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, debug=debug)
+    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, orientation, debug=debug)
 
     # create own collection for each imported file
     obj_col = bpy.data.collections.new(filename)
@@ -996,7 +1004,7 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
             if debug: print("NEW child start offset:", start_offset)
             if debug: print("NEW child end offset:", end_offset)
             mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s = parse_nl(
-                f.read(end_offset - start_offset), debug=debug)
+                f.read(end_offset - start_offset), orientation, debug=debug)
 
             sub_col = bpy.data.collections.new(f"child_{i}")
             obj_col.children.link(sub_col)
