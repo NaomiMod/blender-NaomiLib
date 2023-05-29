@@ -22,7 +22,7 @@ from bpy_extras.io_utils import ImportHelper, path_reference_mode
 importlib.reload(NLi)
 
 
-def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fScaling: float, bDebug: bool, bOrientation):
+def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fScaling: float, bDebug: bool, bOrientation, bNegScale_X: bool):
     if bCleanup:
         print("CLEANING UP")
         NLi.cleanup()
@@ -32,7 +32,7 @@ def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fSca
     if bArchive:
         ret = NLi.main_function_import_archive(self, filepath=filepath, scaling=fScaling, debug=bDebug)
     else:
-        ret = NLi.main_function_import_file(self, filepath=filepath, scaling=fScaling, debug=bDebug, orientation=bOrientation)
+        ret = NLi.main_function_import_file(self, filepath=filepath, scaling=fScaling, debug=bDebug, orientation=bOrientation, NegScale_X=bNegScale_X)
     return ret
 
 class ImportNL(bpy.types.Operator, ImportHelper):
@@ -80,11 +80,17 @@ class ImportNL(bpy.types.Operator, ImportHelper):
         items=[('X_UP', "X-Up", "X-Up Orientation"),
                ('Y_UP', "Y-Up", "Y-Up Orientation"),
                ('Z_UP', "Z-Up", "Z-Up Orientation")],
-        default='Y_UP'
+        default='Z_UP'
+    )
+
+    negative_x_scale_enabled: BoolProperty(
+        name="Enable Negative X Scale",
+        description="Applies a -1 scale transformation on x axis",
+        default=True
     )
     
     def execute(self, context):
-        if import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup, bArchive=self.setting_archive, fScaling=self.setting_scaling, bDebug=self.setting_debug, bOrientation=self.orientation):
+        if import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup, bArchive=self.setting_archive, fScaling=self.setting_scaling, bDebug=self.setting_debug, bOrientation=self.orientation, bNegScale_X=self.negative_x_scale_enabled):
             return {'FINISHED'}
         else:
             return {'CANCELLED'}

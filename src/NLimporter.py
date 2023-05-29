@@ -59,7 +59,7 @@ zVal = 2
 # main parse function
 #############################
 
-def parse_nl(nl_bytes: bytes, orientation, debug=False) -> list:
+def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> list:
     big_endian = False
     nlfile = BytesIO(nl_bytes)
 
@@ -789,13 +789,21 @@ def parse_nl(nl_bytes: bytes, orientation, debug=False) -> list:
 
         for face in mesh['face_vertex']:
             for point in face['point']:
+
+                updatedPoint_Y = point[yVal]
+                updatedPoint_Z = point[zVal]
+                if NegScale_X:
+                    # Trying to apply neg X scale: [i]
+                    updatedPoint_X = point[xVal] * -1.0
+                else:
+                    updatedPoint_X = point[xVal]
                 # swap Y and Z axis
                 if orientation == 'X_UP':
-                    points.append(Vector((point[yVal], point[xVal], point[zVal])))
+                    points.append(Vector((updatedPoint_Y, updatedPoint_X, updatedPoint_Z)))
                 elif orientation == 'Y_UP':
-                    points.append(Vector((point[xVal], point[yVal], point[zVal])))
+                    points.append(Vector((updatedPoint_X, updatedPoint_Y, updatedPoint_Z)))
                 elif orientation == 'Z_UP':
-                    points.append(Vector((point[xVal], point[zVal], point[yVal])))
+                    points.append(Vector((updatedPoint_X, updatedPoint_Z, updatedPoint_Y)))
                 else:
                     print("Something wrong")
                 
@@ -940,7 +948,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
 # MAIN functions
 ########################
 
-def main_function_import_file(self, filepath: str, scaling: float, debug: bool, orientation):
+def main_function_import_file(self, filepath: str, scaling: float, debug: bool, orientation, NegScale_X: bool):
     with open(filepath, "rb") as f:
         NL = f.read(-1)
 
@@ -948,7 +956,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
     filename = filepath.split(os.sep)[-1]
     print('\n\n' + filename + '\n\n')
 
-    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, orientation, debug=debug)
+    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, orientation, NegScale_X, debug=debug)
 
     # create own collection for each imported file
     obj_col = bpy.data.collections.new(filename)
@@ -1004,7 +1012,7 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
             if debug: print("NEW child start offset:", start_offset)
             if debug: print("NEW child end offset:", end_offset)
             mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s = parse_nl(
-                f.read(end_offset - start_offset), orientation, debug=debug)
+                f.read(end_offset - start_offset), debug=debug)
 
             sub_col = bpy.data.collections.new(f"child_{i}")
             obj_col.children.link(sub_col)
