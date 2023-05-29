@@ -928,13 +928,8 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         mh_texID = mesh_headers[i][4]
 
         print("new object", new_object.name, '; has tex ID: TexID_0x{0:02X}'.format(mh_texID))
-        texFileName = 'TexID_0x{0:02X}'.format(mh_texID)
-        texFilenameExt = texFileName + '.png'
-        filename = p_filepath.split(os.sep)[-1]
-        lengthFilename = len(filename)
-        texDir = p_filepath[:-lengthFilename] + 'Textures\\'
-        texPath = texDir + texFilenameExt
-        print(texPath)
+
+        # print(texPath)
         # add viewport color to object
         new_mat = bpy.data.materials.new(f"object_{i}_mat")
         new_mat.diffuse_color = meshColors[i]
@@ -942,18 +937,24 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         # Ensure the material has a node tree
         if new_mat.use_nodes is False:
             new_mat.use_nodes = True
-            
-        material_node_tree = new_mat.node_tree
+        if mh_texID >= 0:
+            texFileName = 'TexID_0x{0:02X}'.format(mh_texID)
+            texFilenameExt = texFileName + '.png'
+            filename = p_filepath.split(os.sep)[-1]
+            lengthFilename = len(filename)
+            texDir = p_filepath[:-lengthFilename] + 'Textures\\'
+            texPath = texDir + texFilenameExt
+            material_node_tree = new_mat.node_tree
 
-        new_texture = bpy.data.textures.new(name=texFileName, type='IMAGE')
-        new_texture.image = bpy.data.images.load(texPath)
+            new_texture = bpy.data.textures.new(name=texFileName, type='IMAGE')
+            new_texture.image = bpy.data.images.load(texPath)
 
-        texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
-        texture_node.image = new_texture.image
+            texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
+            texture_node.image = new_texture.image
 
-        # Connect the texture node to the desired input node (e.g., Principled BSDF)
-        input_node = material_node_tree.nodes.get('Principled BSDF')
-        material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
+            # Connect the texture node to the desired input node (e.g., Principled BSDF)
+            input_node = material_node_tree.nodes.get('Principled BSDF')
+            material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
 
         # print(f"new_mat.diffuse_color: {new_mat.diffuse_color} , mesh_colors: {meshColors}")
         new_mat.roughness = spec_int
