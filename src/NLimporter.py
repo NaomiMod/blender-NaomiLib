@@ -939,7 +939,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
             new_mat.use_nodes = True
         if mh_texID >= 0:
             texFileName = 'TexID_0x{0:02X}'.format(mh_texID)
-            texFilenameExt = texFileName + '.png'
+            texFilenameExt = texFileName + '.tga'
             filename = p_filepath.split(os.sep)[-1]
             lengthFilename = len(filename)
             texDir = p_filepath[:-lengthFilename] + 'Textures\\'
@@ -955,7 +955,14 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
             # Connect the texture node to the desired input node (e.g., Principled BSDF)
             input_node = material_node_tree.nodes.get('Principled BSDF')
             material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
-
+            material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
+            # print(new_object.naomi_param.listType)
+            if (new_object.naomi_param.listType == '0'):
+                texture_node.image.alpha_mode = "NONE"
+                new_mat.blend_method = "OPAQUE"
+            else:
+                texture_node.image.alpha_mode = "CHANNEL_PACKED"
+                new_mat.blend_method = "HASHED"
         # print(f"new_mat.diffuse_color: {new_mat.diffuse_color} , mesh_colors: {meshColors}")
         new_mat.roughness = spec_int
         new_mat.metallic = 0.5
