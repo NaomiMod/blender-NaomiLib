@@ -59,7 +59,7 @@ zVal = 2
 # main parse function
 #############################
 
-def parse_nl(nl_bytes: bytes, debug=False) -> list:
+def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> list:
     big_endian = False
     nlfile = BytesIO(nl_bytes)
 
@@ -545,7 +545,7 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
             print("\n" + "-----Mesh_Size-----" + "\n")
             print(f"Mesh Data Size: {hex(mesh_end_offset)}")
 
-        m_Headers = (l_Parameter_Header, l_ISP_TSP_Header, l_TSP_Header, l_texCtrl_Header)
+        m_Headers = (l_Parameter_Header, l_ISP_TSP_Header, l_TSP_Header, l_texCtrl_Header, m_texID)
         return m_Headers
 
     ##############################
@@ -789,8 +789,24 @@ def parse_nl(nl_bytes: bytes, debug=False) -> list:
 
         for face in mesh['face_vertex']:
             for point in face['point']:
+
+                updatedPoint_Y = point[yVal]
+                updatedPoint_Z = point[zVal]
+                if NegScale_X:
+                    # Trying to apply neg X scale: [i]
+                    updatedPoint_X = point[xVal] * -1.0
+                else:
+                    updatedPoint_X = point[xVal]
                 # swap Y and Z axis
-                points.append(Vector((point[xVal], point[yVal], point[zVal])))
+                if orientation == 'X_UP':
+                    points.append(Vector((updatedPoint_Y, updatedPoint_X, updatedPoint_Z)))
+                elif orientation == 'Y_UP':
+                    points.append(Vector((updatedPoint_X, updatedPoint_Y, updatedPoint_Z)))
+                elif orientation == 'Z_UP':
+                    points.append(Vector((updatedPoint_X, updatedPoint_Z, updatedPoint_Y)))
+                else:
+                    print("Something wrong")
+                
             for texture in face['texture']:
                 textures.append(Vector(texture))
 
@@ -839,9 +855,8 @@ def redraw():
         if area.type in ['IMAGE_EDITOR', 'VIEW_3D']:
             area.tag_redraw()
 
-
 def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, mesh_headers: list,
-                 parent_col: bpy.types.Collection, scale: float, debug=False):
+                 parent_col: bpy.types.Collection, scale: float, p_filepath: str, debug=False):
     if debug: print("meshes:", len(meshes))
 
     for i, mesh in enumerate(meshes):
@@ -910,11 +925,44 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_object.naomi_texCtrl.pixelFormat = str(mesh_headers[i][3][2])
         new_object.naomi_texCtrl.scanOrder = str(mesh_headers[i][3][3])
         new_object.naomi_texCtrl.texCtrlUstride = str(mesh_headers[i][3][4])
-        print("new object", new_object.name)
+        mh_texID = mesh_headers[i][4]
 
+        print("new object", new_object.name, '; has tex ID: TexID_0x{0:02X}'.format(mh_texID))
+
+        # print(texPath)
         # add viewport color to object
         new_mat = bpy.data.materials.new(f"object_{i}_mat")
         new_mat.diffuse_color = meshColors[i]
+        
+        # Ensure the material has a node tree
+        if new_mat.use_nodes is False:
+            new_mat.use_nodes = True
+        if mh_texID >= 0:
+            texFileName = 'TexID_0x{0:02X}'.format(mh_texID)
+            texFilenameExt = texFileName + '.tga'
+            filename = p_filepath.split(os.sep)[-1]
+            lengthFilename = len(filename)
+            texDir = p_filepath[:-lengthFilename] + 'Textures\\'
+            texPath = texDir + texFilenameExt
+            material_node_tree = new_mat.node_tree
+
+            new_texture = bpy.data.textures.new(name=texFileName, type='IMAGE')
+            new_texture.image = bpy.data.images.load(texPath)
+
+            texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
+            texture_node.image = new_texture.image
+
+            # Connect the texture node to the desired input node (e.g., Principled BSDF)
+            input_node = material_node_tree.nodes.get('Principled BSDF')
+            material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
+            material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
+            # print(new_object.naomi_param.listType)
+            if (new_object.naomi_param.listType == '0'):
+                texture_node.image.alpha_mode = "NONE"
+                new_mat.blend_method = "OPAQUE"
+            else:
+                texture_node.image.alpha_mode = "CHANNEL_PACKED"
+                new_mat.blend_method = "HASHED"
         # print(f"new_mat.diffuse_color: {new_mat.diffuse_color} , mesh_colors: {meshColors}")
         new_mat.roughness = spec_int
         new_mat.metallic = 0.5
@@ -932,7 +980,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
 # MAIN functions
 ########################
 
-def main_function_import_file(self, filepath: str, scaling: float, debug: bool):
+def main_function_import_file(self, filepath: str, scaling: float, debug: bool, orientation, NegScale_X: bool):
     with open(filepath, "rb") as f:
         NL = f.read(-1)
 
@@ -940,7 +988,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool):
     filename = filepath.split(os.sep)[-1]
     print('\n\n' + filename + '\n\n')
 
-    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, debug=debug)
+    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, orientation, NegScale_X, debug=debug)
 
     # create own collection for each imported file
     obj_col = bpy.data.collections.new(filename)
@@ -954,7 +1002,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool):
     bpy.context.scene.collection.children.link(obj_col)
 
     return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, mesh_headers=mesh_header_s,
-                        parent_col=obj_col, scale=scaling,
+                        parent_col=obj_col, scale=scaling, p_filepath=filepath,
                         debug=debug)
 
 
@@ -1003,7 +1051,7 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
 
             if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors,
                                 mesh_headers=mesh_header_s, parent_col=sub_col,
-                                scale=scaling, debug=debug): return False
+                                scale=scaling, p_filepath=filepath, debug=debug): return False
             f.seek(st_p)
             start_offset = end_offset
 
