@@ -110,13 +110,10 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
         elif num > 0x5:
             return ((1 / num) + (0.02))
 
-
     # convert vertex hex color to blender float
     def col_hex_to_float(num: int) -> float:
         max = 0xFF
         return num / max
-
-
 
     #############################
     # model header function
@@ -481,11 +478,10 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
             print("Texture ID: " + str(t_var))
 
         # 7. texture shading
-        global m_tex_shading,spec_int
+        global m_tex_shading, spec_int
         m_tex_shading = read_sint32_buff()
         # spec_int = m_tex_shading / 10     Original, but currently not giving accurate results
-        spec_int = spec_to_float(m_tex_shading) # WIP
-
+        spec_int = spec_to_float(m_tex_shading)  # WIP
 
         if debug:
 
@@ -514,7 +510,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
         m_col_base_R = read_float_buff()
         m_col_base_G = read_float_buff()
         m_col_base_B = read_float_buff()
-        mesh_colors.append((m_col_base_R, m_col_base_G, m_col_base_B, m_col_base_A))    # Blender surface color is RGBA
+        mesh_colors.append((m_col_base_R, m_col_base_G, m_col_base_B, m_col_base_A))  # Blender surface color is RGBA
 
         if debug:
             print("\n" + "-----Mesh_Base_Colors_ARGB-----" + "\n")
@@ -587,7 +583,6 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
             print("bit7     | NOT Send GP  :[" + str(p_flag_bit7) + "] " + bit_ppar7[(p_flag_bit7)])
             print("bit8     | Env.Mapping  :[" + str(p_flag_bit8) + "] " + bit_ny[(p_flag_bit8)])
 
-
     ##############################
     # Parse Type C Vertex        #
     ##############################
@@ -623,8 +618,6 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
             f"(normals: x,y,z: {normal}\nvtx_col1: ARGB:{vtx_col1_A} {vtx_col1_R} {vtx_col1_G} {vtx_col1_B}\n"
             f"vtx_col2: ARGB:{vtx_col2_A} {vtx_col2_R} {vtx_col2_G} {vtx_col2_B}")
 
-
-
     ######################################
     #  Zocker_160 code, do not change it!       /  I love your code buddy, it's awesome, really.
     ######################################
@@ -634,7 +627,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     mesh_colors = list()
     m_headr_grps = list()
 
-    nlfile.seek(0x64)   # size of mesh
+    nlfile.seek(0x64)  # size of mesh
     mesh_end_offset = read_uint32_buff() + 0x64
     if debug: print("MESH END offset START:", mesh_end_offset)
     m = 0
@@ -653,8 +646,8 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                 print(nlfile.tell())
 
             nlfile.seek(nlfile.tell() - 0x4, 0x0)  # Get ready to read mesh params
-            m_headr_grps.append(mesh_param())      # read mesh header parameters
-            nlfile.seek(-0x4, 0x1)                 # Continue to read file
+            m_headr_grps.append(mesh_param())  # read mesh header parameters
+            nlfile.seek(-0x4, 0x1)  # Continue to read file
 
             if debug: print(nlfile.tell())
 
@@ -676,7 +669,8 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                 print(face_type)
                 poly_flags()  # prints all poly bit flags
 
-            if (((int.from_bytes(face_type,"little")) >> 3) & 1) == 1:  # check face type, if bit3 flag is set to 1, it's triangles!
+            if (((int.from_bytes(face_type,
+                                 "little")) >> 3) & 1) == 1:  # check face type, if bit3 flag is set to 1, it's triangles!
                 mult = True
             else:
                 mult = False
@@ -710,12 +704,10 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                     nlfile.seek(entry_pos, 0x0)
                 vertex.append(read_point3_buff())
 
-
-                if m_tex_shading == -3:     # It's TypeC vertex format, get sint8 normals and vert colors
+                if m_tex_shading == -3:  # It's TypeC vertex format, get sint8 normals and vert colors
                     type_c()
                 else:
                     normal.append(read_point3_buff())
-                    
 
                 texture_uv.append(read_point2_buff())
 
@@ -727,7 +719,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 
             # if debug: print("current position:", nlfile.tell())
 
-            strip_counter = -1        # Reset start of strip
+            strip_counter = -1  # Reset start of strip
 
             faces_vertex.append({
                 'point': vertex,
@@ -760,8 +752,6 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 
                     faces_index.append([x, y, z])
                     strip_counter += 1
-
-
 
             f += 1
             vertex_index_last += n_vertex
@@ -806,7 +796,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                     points.append(Vector((updatedPoint_X, updatedPoint_Z, updatedPoint_Y)))
                 else:
                     print("Something wrong")
-                
+
             for texture in face['texture']:
                 textures.append(Vector(texture))
 
@@ -854,6 +844,7 @@ def redraw():
     for area in bpy.context.screen.areas:
         if area.type in ['IMAGE_EDITOR', 'VIEW_3D']:
             area.tag_redraw()
+
 
 def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, mesh_headers: list,
                  parent_col: bpy.types.Collection, scale: float, p_filepath: str, debug=False):
@@ -933,7 +924,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         # add viewport color to object
         new_mat = bpy.data.materials.new(f"object_{i}_mat")
         new_mat.diffuse_color = meshColors[i]
-        
+
         # Ensure the material has a node tree
         if new_mat.use_nodes is False:
             new_mat.use_nodes = True
@@ -944,25 +935,29 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
             lengthFilename = len(filename)
             texDir = p_filepath[:-lengthFilename] + 'Textures\\'
             texPath = texDir + texFilenameExt
-            material_node_tree = new_mat.node_tree
 
-            new_texture = bpy.data.textures.new(name=texFileName, type='IMAGE')
-            new_texture.image = bpy.data.images.load(texPath)
+            # Check if texture file exist, otherwise skip this step:
+            if os.path.exists(texPath):
+                material_node_tree = new_mat.node_tree
+                new_texture = bpy.data.textures.new(name=texFileName, type='IMAGE')
+                new_texture.image = bpy.data.images.load(texPath)
 
-            texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
-            texture_node.image = new_texture.image
+                texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
+                texture_node.image = new_texture.image
 
-            # Connect the texture node to the desired input node (e.g., Principled BSDF)
-            input_node = material_node_tree.nodes.get('Principled BSDF')
-            material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
-            material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
-            # print(new_object.naomi_param.listType)
-            if (new_object.naomi_param.listType == '0'):
-                texture_node.image.alpha_mode = "NONE"
-                new_mat.blend_method = "OPAQUE"
-            else:
-                texture_node.image.alpha_mode = "CHANNEL_PACKED"
-                new_mat.blend_method = "HASHED"
+                # Connect the texture node to the desired input node (e.g., Principled BSDF)
+                input_node = material_node_tree.nodes.get('Principled BSDF')
+                material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
+                material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
+                # print(new_object.naomi_param.listType)
+                if (new_object.naomi_param.listType == '0'):
+                    texture_node.image.alpha_mode = "NONE"
+                    new_mat.blend_method = "OPAQUE"
+                else:
+                    texture_node.image.alpha_mode = "CHANNEL_PACKED"
+                    new_mat.blend_method = "HASHED"
+
+
         # print(f"new_mat.diffuse_color: {new_mat.diffuse_color} , mesh_colors: {meshColors}")
         new_mat.roughness = spec_int
         new_mat.metallic = 0.5
@@ -988,7 +983,8 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
     filename = filepath.split(os.sep)[-1]
     print('\n\n' + filename + '\n\n')
 
-    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, orientation, NegScale_X, debug=debug)
+    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, orientation, NegScale_X,
+                                                                                           debug=debug)
 
     # create own collection for each imported file
     obj_col = bpy.data.collections.new(filename)
@@ -1056,6 +1052,5 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
             start_offset = end_offset
 
     if debug: print("NUMBER OF CHILDREN:", num_child_models)
-
 
     return True
