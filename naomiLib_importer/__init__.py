@@ -12,6 +12,7 @@ bl_info = {
 
 import bpy
 import importlib
+import os
 
 from . import NLimporter as NLi
 
@@ -20,12 +21,14 @@ from bpy.props import StringProperty, BoolProperty, FloatProperty
 from bpy_extras.io_utils import ImportHelper, path_reference_mode
 
 importlib.reload(NLi)
-
+cleanup_ctr = False
 
 def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fScaling: float, bDebug: bool, bOrientation, bNegScale_X: bool):
+    global cleanup_ctr  # If it has been cleaned up
     if bCleanup:
-        print("CLEANING UP")
-        NLi.cleanup()
+        if cleanup_ctr == False:
+            print("CLEANING UP")
+            NLi.cleanup()
 
     ret = False
 
@@ -33,15 +36,22 @@ def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fSca
         ret = NLi.main_function_import_archive(self, filepath=filepath, scaling=fScaling, debug=bDebug)
     else:
         ret = NLi.main_function_import_file(self, filepath=filepath, scaling=fScaling, debug=bDebug, orientation=bOrientation, NegScale_X=bNegScale_X)
+
     return ret
 
 class ImportNL(bpy.types.Operator, ImportHelper):
-    """Import a NaomiLib file"""    
+    """Import a NaomiLib file"""
 
     bl_idname = "import_scene.naomilib"
     bl_label = "Import NaomiLib"
 
     filename_ext = ".bin",".raw" #.bin or raw supported by SMB
+
+    load_directory: bpy.props.BoolProperty(
+        name="Load Directory",
+        description="Import all files in the same directory as the selected file",
+        default=False,
+    )
 
     filter_glob: StringProperty(
         default="*.bin;*.raw",
@@ -74,7 +84,7 @@ class ImportNL(bpy.types.Operator, ImportHelper):
         description="enables debugging mode and prints useful information into log",
         default=False,
     )
-    
+
     orientation: bpy.props.EnumProperty(
         name="Orientation",
         items=[('X_UP', "X-Up", "X-Up Orientation"),
@@ -88,12 +98,22 @@ class ImportNL(bpy.types.Operator, ImportHelper):
         description="Applies a -1 scale transformation on x axis",
         default=True
     )
-    
+
+
     def execute(self, context):
-        if import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup, bArchive=self.setting_archive, fScaling=self.setting_scaling, bDebug=self.setting_debug, bOrientation=self.orientation, bNegScale_X=self.negative_x_scale_enabled):
-            return {'FINISHED'}
+        global cleanup_ctr
+        cleanup_ctr=False
+        if self.load_directory:
+            folder_path = os.path.dirname(self.filepath)
+            for filename in os.listdir(folder_path):
+                if filename.endswith(".bin") or filename.endswith(".raw"):
+                    file_path = os.path.join(folder_path, filename)
+                    import_nl(self, context, filepath=file_path, bCleanup=self.setting_cleanup, bArchive=self.setting_archive, fScaling=self.setting_scaling, bDebug=self.setting_debug, bOrientation=self.orientation, bNegScale_X=self.negative_x_scale_enabled)
+                cleanup_ctr=True
         else:
-            return {'CANCELLED'}
+            import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup, bArchive=self.setting_archive, fScaling=self.setting_scaling, bDebug=self.setting_debug, bOrientation=self.orientation, bNegScale_X=self.negative_x_scale_enabled)
+
+        return {'FINISHED'}
 
 class Naomi_GlobalParam_0(bpy.types.PropertyGroup):
     objFormat : bpy.props.EnumProperty(
@@ -631,6 +651,6 @@ def unregister():
     del bpy.types.Object.naomi_texCtrl 
     del bpy.types.Collection.gp0
     del bpy.types.Collection.gp1
-    
+
 if __name__ == "__main__":
     register()
