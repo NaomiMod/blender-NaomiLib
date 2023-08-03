@@ -46,6 +46,7 @@ This project is intended exclusively for educational purposes and has no affilia
 | Cosmic Smash                               | SEGA DREAMCAST          |
 | Crazy Taxi                                 | SEGA DREAMCAST          |
 | Crazy Taxi 2                               | SEGA DREAMCAST          |
+| Daytona USA 2001                           | SEGA DREAMCAST          |
 | Dead or Alive 2                            | SEGA DREAMCAST          |
 | Dead or Alive 2 - Prototype (27 JAN 2000)  | SEGA DREAMCAST          |
 | Ferrari F355 Challenge                     | SEGA DREAMCAST          |
