@@ -930,11 +930,18 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
             new_mat.use_nodes = True
         if mh_texID >= 0:
             texFileName = 'TexID_{0:03d}'.format(mh_texID)
-            texFilenameExt = texFileName + '.png'
+            texFilenameExt = texFileName
             filename = p_filepath.split(os.sep)[-1]
             lengthFilename = len(filename)
             texDir = p_filepath[:-lengthFilename] + 'Textures\\'
             texPath = texDir + texFilenameExt
+            textureFileFormats = ('png','tga')
+
+            # Check if texture file use one of specified formats:
+            for format in textureFileFormats:
+                if os.path.exists(texDir + texFileName + '.' + format):
+                    texPath = texDir + texFileName + '.' + format
+                    break
 
             # Check if texture file exist:
             if os.path.exists(texPath):
