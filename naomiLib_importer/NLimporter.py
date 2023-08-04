@@ -929,14 +929,14 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         if new_mat.use_nodes is False:
             new_mat.use_nodes = True
         if mh_texID >= 0:
-            texFileName = 'TexID_0x{0:02X}'.format(mh_texID)
-            texFilenameExt = texFileName + '.tga'
+            texFileName = 'TexID_{0:03d}'.format(mh_texID)
+            texFilenameExt = texFileName + '.png'
             filename = p_filepath.split(os.sep)[-1]
             lengthFilename = len(filename)
             texDir = p_filepath[:-lengthFilename] + 'Textures\\'
             texPath = texDir + texFilenameExt
 
-            # Check if texture file exist, otherwise skip this step:
+            # Check if texture file exist:
             if os.path.exists(texPath):
                 material_node_tree = new_mat.node_tree
                 new_texture = bpy.data.textures.new(name=texFileName, type='IMAGE')
