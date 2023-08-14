@@ -532,6 +532,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
             print(f"Red  : {m_col_offs_R}")
             print(f"Green: {m_col_offs_G}")
             print(f"Blue : {m_col_offs_B}")
+        mesh_offcolors.append((m_col_offs_R, m_col_offs_G, m_col_offs_B, m_col_offs_A))  # Blender surface color is RGBA
 
         # 11. mesh size
 
@@ -625,6 +626,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     meshes = list()
     mesh_faces = list()
     mesh_colors = list()
+    mesh_offcolors = list()
     m_headr_grps = list()
 
     nlfile.seek(0x64)  # size of mesh
@@ -821,7 +823,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     # mesh_faces[mesh_index][face_index][0|1|2]
     ####
 
-    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors, m_headr_grps, gflag_headers
+    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors,mesh_offcolors, m_headr_grps, gflag_headers
 
 
 ########################
@@ -846,9 +848,13 @@ def redraw():
             area.tag_redraw()
 
 
-def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, mesh_headers: list,
+
+
+def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, meshOffColors:list, mesh_headers: list,
                  parent_col: bpy.types.Collection, scale: float, p_filepath: str, debug=False):
+
     if debug: print("meshes:", len(meshes))
+
 
     for i, mesh in enumerate(meshes):
         # print("mesh", i, mesh['vertex'])
@@ -916,58 +922,83 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_object.naomi_texCtrl.pixelFormat = str(mesh_headers[i][3][2])
         new_object.naomi_texCtrl.scanOrder = str(mesh_headers[i][3][3])
         new_object.naomi_texCtrl.texCtrlUstride = str(mesh_headers[i][3][4])
+        new_object.naomi_param.mh_texID = mesh_headers[i][4]
+        new_object.naomi_param.meshColor = meshColors[i]
+        new_object.naomi_param.meshOffsetColor = meshOffColors[i]
+
         mh_texID = mesh_headers[i][4]
 
-        print("new object", new_object.name, '; has tex ID: TexID_0x{0:02X}'.format(mh_texID))
+        print("new object", new_object.name, '; has tex ID: TexID_{0:03d}'.format(mh_texID))
 
         # print(texPath)
         # add viewport color to object
         new_mat = bpy.data.materials.new(f"object_{i}_mat")
         new_mat.diffuse_color = meshColors[i]
 
+
         # Ensure the material has a node tree
         if new_mat.use_nodes is False:
             new_mat.use_nodes = True
+
+        material_node_tree = new_mat.node_tree
+        color_input = new_mat.node_tree.nodes.get('Principled BSDF').inputs['Base Color']
+        alpha_input = new_mat.node_tree.nodes.get('Principled BSDF').inputs['Alpha']
+        coloroff_input = new_mat.node_tree.nodes.get('Principled BSDF').inputs[
+            'Subsurface Color']  # Mesh Offset Colors?
+        color_input.default_value = meshColors[i]
+        alpha_input.default_value = meshColors[i][3]
+        coloroff_input.default_value = meshOffColors[i]
+
+        # Inside the mh_texID >= 0 block:
         if mh_texID >= 0:
+            texture_filepaths = [] # Initialize textures filepath list
+
             texFileName = 'TexID_{0:03d}'.format(mh_texID)
             texFilenameExt = texFileName
             filename = p_filepath.split(os.sep)[-1]
             lengthFilename = len(filename)
             texDir = p_filepath[:-lengthFilename] + 'Textures\\'
             texPath = texDir + texFilenameExt
-            textureFileFormats = ('png','tga')
+            textureFileFormats = ('png', 'tga')
 
-            # Check if texture file use one of specified formats:
+            # Check if texture file uses one of the specified formats:
             for format in textureFileFormats:
-                if os.path.exists(texDir + texFileName + '.' + format):
-                    texPath = texDir + texFileName + '.' + format
+                potential_tex_path = texDir + texFileName + '.' + format
+                if os.path.exists(potential_tex_path):
+                    texPath = potential_tex_path
                     break
 
-            # Check if texture file exist:
-            if os.path.exists(texPath):
-                material_node_tree = new_mat.node_tree
-                new_texture = bpy.data.textures.new(name=texFileName, type='IMAGE')
-                new_texture.image = bpy.data.images.load(texPath)
+            for img in bpy.data.images:
+                if img.filepath == texPath:
+                    texture_filepaths.append(texPath)
 
-                texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
-                texture_node.image = new_texture.image
+            # Check if the texture path is unique
+            if texPath not in texture_filepaths:
+                new_texture = bpy.data.images.load(texPath)
+            else:
+                # Use the already loaded texture
+                existing_texture = [img for img in bpy.data.images if img.filepath == texPath][0]
+                new_texture = existing_texture
 
-                # Connect the texture node to the desired input node (e.g., Principled BSDF)
-                input_node = material_node_tree.nodes.get('Principled BSDF')
-                material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
-                material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
-                # print(new_object.naomi_param.listType)
-                if (new_object.naomi_param.listType == '0'):
-                    texture_node.image.alpha_mode = "NONE"
-                    new_mat.blend_method = "OPAQUE"
-                else:
-                    texture_node.image.alpha_mode = "CHANNEL_PACKED"
-                    new_mat.blend_method = "HASHED"
+            texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
+            texture_node.image = new_texture
+
+            # Connect the texture node to the desired input node (e.g., Principled BSDF)
+            input_node = material_node_tree.nodes.get('Principled BSDF')
+            material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
+            material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
+            if new_object.naomi_param.listType == '0':
+                texture_node.image.alpha_mode = "NONE"
+                new_mat.blend_method = "OPAQUE"
+            else:
+                texture_node.image.alpha_mode = "CHANNEL_PACKED"
+                new_mat.blend_method = "HASHED"
 
 
-        # print(f"new_mat.diffuse_color: {new_mat.diffuse_color} , mesh_colors: {meshColors}")
+
+
         new_mat.roughness = spec_int
-        new_mat.metallic = 0.5
+        new_mat.metallic = 0.0
 
         new_object.data.materials.append(new_mat)
 
@@ -990,7 +1021,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
     filename = filepath.split(os.sep)[-1]
     print('\n\n' + filename + '\n\n')
 
-    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s, g_headers = parse_nl(NL, orientation, NegScale_X,
+    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors,mesh_offcolors, mesh_header_s, g_headers = parse_nl(NL, orientation, NegScale_X,
                                                                                            debug=debug)
 
     # create own collection for each imported file
@@ -1004,7 +1035,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
 
     bpy.context.scene.collection.children.link(obj_col)
 
-    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, mesh_headers=mesh_header_s,
+    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, meshOffColors=mesh_offcolors,mesh_headers=mesh_header_s,
                         parent_col=obj_col, scale=scaling, p_filepath=filepath,
                         debug=debug)
 
@@ -1046,13 +1077,13 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
             f.seek(start_offset)
             if debug: print("NEW child start offset:", start_offset)
             if debug: print("NEW child end offset:", end_offset)
-            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_header_s = parse_nl(
+            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors,mesh_header_s = parse_nl(
                 f.read(end_offset - start_offset), debug=debug)
 
             sub_col = bpy.data.collections.new(f"child_{i}")
             obj_col.children.link(sub_col)
 
-            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors,
+            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors,meshOffColors=mesh_offcolors,
                                 mesh_headers=mesh_header_s, parent_col=sub_col,
                                 scale=scaling, p_filepath=filepath, debug=debug): return False
             f.seek(st_p)
