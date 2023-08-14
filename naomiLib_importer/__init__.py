@@ -13,12 +13,11 @@ bl_info = {
 import bpy
 import importlib
 import os
-
 from . import NLimporter as NLi
-
+from bpy.props import FloatVectorProperty
 from bpy.props import StringProperty, BoolProperty, FloatProperty
-# ImportHelper is a helper class, defines filename and extention
 from bpy_extras.io_utils import ImportHelper, path_reference_mode
+
 
 importlib.reload(NLi)
 cleanup_ctr = False
@@ -79,6 +78,7 @@ class ImportNL(bpy.types.Operator, ImportHelper):
         max=1,
     )
 
+
     setting_debug: BoolProperty(
         name="enable debugging",
         description="enables debugging mode and prints useful information into log",
@@ -118,7 +118,7 @@ class ImportNL(bpy.types.Operator, ImportHelper):
 class Naomi_GlobalParam_0(bpy.types.PropertyGroup):
     objFormat : bpy.props.EnumProperty(
         description= "Describes Object Mode",
-        name = "Index Mode", 
+        name = "Index Mode",
         items = [('0', "Beta Index",""),
                  ('1', "Super Index",""),
         ],
@@ -126,7 +126,7 @@ class Naomi_GlobalParam_0(bpy.types.PropertyGroup):
 class Naomi_GlobalParam_1(bpy.types.PropertyGroup):
     skp1stSrcOp : bpy.props.BoolProperty(
         description= "Skip 1st legitimate source option",
-        name = "Skip 1st Lgt Src Op", 
+        name = "Skip 1st Lgt Src Op",
     )
     envMap : bpy.props.BoolProperty(
         description= "Apply Environment Mapping",
@@ -138,9 +138,9 @@ class Naomi_GlobalParam_1(bpy.types.PropertyGroup):
     )
     bumpMap : bpy.props.BoolProperty(
         description= "BumpMap is used/available",
-        name = "Bump Map Available", 
+        name = "Bump Map Available",
     )
-class COL_PT_collection_gps(bpy.types.Panel): 
+class COL_PT_collection_gps(bpy.types.Panel):
     _context_path = "collection"
     _property_type = bpy.types.Collection
     bl_label = "Naomi Global Parameters"
@@ -148,20 +148,20 @@ class COL_PT_collection_gps(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "collection"
-    
+
     @classmethod
     def poll(self, context):
         return context.view_layer.active_layer_collection is not None
-    
+
     def draw(self, context):
         active = context.view_layer.active_layer_collection.collection
         layout = self.layout
-        
+
         layout.label(text= "Global Parameters 0")
         gp_0 = active.gp0
         box = layout.box()
         box.prop(gp_0, "objFormat")
-        
+
         layout.label(text= "Global Parameters 1")
         gp_1 = active.gp1
         box = layout.box()
@@ -171,7 +171,89 @@ class COL_PT_collection_gps(bpy.types.Panel):
         row = box.row()
         row.prop(gp_1, "pltTex")
         row.prop(gp_1, "bumpMap")
-        
+
+def update_mesh_color(self, context):
+    active_object = bpy.context.active_object
+    if active_object:
+        # Check if the object has a material
+        if active_object.material_slots:
+            material = active_object.material_slots[0].material
+            if material.use_nodes and material.node_tree:
+                # Find the Principled BSDF shader node
+                principled_node = None
+                for node in material.node_tree.nodes:
+                    if node.type == 'BSDF_PRINCIPLED':
+                        principled_node = node
+                        break
+
+                if principled_node:
+                    # Update the base color of the Principled BSDF shader
+                    base_color = self.meshColor
+                    principled_node.inputs['Base Color'].default_value = (
+                    *base_color[:3], base_color[3])  # Convert to tuple (R, G, B, A)
+
+def update_mesh_offsetcolor(self, context):
+    active_object = bpy.context.active_object
+    if active_object:
+        # Check if the object has a material
+        if active_object.material_slots:
+            material = active_object.material_slots[0].material
+            if material.use_nodes and material.node_tree:
+                # Find the Principled BSDF shader node
+                principled_node = None
+                for node in material.node_tree.nodes:
+                    if node.type == 'BSDF_PRINCIPLED':
+                        principled_node = node
+                        break
+
+                if principled_node:
+                    # Update the base color of the Principled BSDF shader
+                    base_color = self.meshOffsetColor
+                    principled_node.inputs['Subsurface Color'].default_value = (
+                    *base_color[:3], base_color[3])  # Convert to tuple (R, G, B, A)
+
+
+def update_texture(self, context):
+    active_obj = bpy.context.active_object
+
+    if active_obj and active_obj.type == 'MESH':
+        texture_filepaths = set()  # Use a set for faster membership checking
+        mh_texID = self.mh_texID
+        textureFileFormats = ('png', 'tga')
+
+        for material_slot in active_obj.material_slots:
+            material = material_slot.material
+            for node in material.node_tree.nodes:
+                if node.type == 'TEX_IMAGE':
+                    tex_node = node
+                    image = tex_node.image
+                    if image:
+                        texFileName = 'TexID_{0:03d}'.format(mh_texID)
+                        texDir, filename = os.path.split(image.filepath)
+                        texPath = os.path.join(texDir, texFileName)
+
+                        for format in textureFileFormats:
+                            potential_tex_path = texPath + '.' + format
+                            if os.path.exists(potential_tex_path):
+                                texPath = potential_tex_path
+                                break
+
+                        for img in bpy.data.images:
+                            if img.filepath == texPath:
+                                tex_node.image = img
+                                break
+                        else:
+                            if os.path.exists(texPath):
+                                loaded_image = bpy.data.images.load(texPath)
+                                tex_node.image = loaded_image
+                                texture_filepaths.add(texPath)
+
+                    bpy.context.area.tag_redraw()
+    else:
+        print("No active mesh object with materials found.")
+
+
+
 class Naomi_Param_Properties(bpy.types.PropertyGroup):
     paramType : bpy.props.EnumProperty(
         description= "Type of Parameters",
@@ -188,7 +270,7 @@ class Naomi_Param_Properties(bpy.types.PropertyGroup):
     )
     endOfStrip : bpy.props.EnumProperty(
         description= "End of Strip Flag",
-        name = "End of Strip", 
+        name = "End of Strip",
         items = [('0', "No",""),
                  ('1', "Yes",""),
         ],
@@ -208,14 +290,14 @@ class Naomi_Param_Properties(bpy.types.PropertyGroup):
     )
     grpEn : bpy.props.EnumProperty(
         description= "Group En",
-        name = "Group En", 
+        name = "Group En",
         items = [('0', "No",""),
                  ('1', "Update Strip_Len + User_Clip settings",""),
         ],
     )
     stripLen : bpy.props.EnumProperty(
         description= "Strip Length",
-        name = "Strip Length", 
+        name = "Strip Length",
         items = [('0', "1 Strip",""),
                  ('1', "2 Strips",""),
                  ('2', "4 Strips",""),
@@ -224,7 +306,7 @@ class Naomi_Param_Properties(bpy.types.PropertyGroup):
     )
     usrClip : bpy.props.EnumProperty(
         description= "User Clip",
-        name = "User Clip", 
+        name = "User Clip",
         items = [('0', "Disable",""),
 #                 ('1', "Reserved",""),
                  ('2', "Inside Enable",""),
@@ -233,21 +315,21 @@ class Naomi_Param_Properties(bpy.types.PropertyGroup):
     )
     shadow : bpy.props.EnumProperty(
         description= "Shadow",
-        name = "Shadow", 
+        name = "Shadow",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
         ],
-    )    
+    )
     volume : bpy.props.EnumProperty(
         description= "Volume",
-        name = "Volume", 
+        name = "Volume",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
         ],
     )
     colType : bpy.props.EnumProperty(
         description= "Color Type Usage",
-        name = "Color Type", 
+        name = "Color Type",
         items = [('0', "Packed Color",""),
                  ('1', "Floating Color",""),
                  ('2', "Intesity Mode 1",""),
@@ -256,38 +338,105 @@ class Naomi_Param_Properties(bpy.types.PropertyGroup):
     )
     textureUsage : bpy.props.EnumProperty(
         description= "Texture Usage",
-        name = "Use Texture", 
+        name = "Use Texture",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
         ],
     )
     offsColorUsage : bpy.props.EnumProperty(
         description= "OffsetColor Usage",
-        name = "Use OffsetColor", 
+        name = "Use OffsetColor",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
                 ],
     )
     gouraudShdUsage : bpy.props.EnumProperty(
         description= "Gouraud Shading Usage",
-        name = "Gouraud Shading", 
+        name = "Gouraud Shading",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
                 ],
     )
     uvDataSize : bpy.props.EnumProperty(
         description= "Data Size of UV Floats",
-        name = "UV Float Size", 
+        name = "UV Float Size",
         items = [('0', "32-bit UV",""),
                  ('1', "16-bit UV",""),
                 ],
     )
-    
-    
+
+    meshColor: FloatVectorProperty(
+        name="Mesh Base Color",
+        subtype='COLOR',
+        size=4,
+        min=0.0,
+        max=1.0,
+        default=(1.0, 1.0, 1.0, 1.0),
+        update=update_mesh_color,
+    )
+
+    meshOffsetColor: FloatVectorProperty(
+        name="Mesh Offset Color",
+        subtype='COLOR',
+        size=4,
+        min=0.0,
+        max=1.0,
+        default=(0.0, 0.0, 0.0, 1.0),
+        update=update_mesh_offsetcolor,
+
+    )
+
+    # Add Centroid parameters
+    centroid_x: bpy.props.FloatProperty(
+        name="Centroid X",
+        default=0.0,
+    )
+
+    centroid_y: bpy.props.FloatProperty(
+        name="Centroid Y",
+        default=0.0,
+    )
+
+    centroid_z: bpy.props.FloatProperty(
+        name="Centroid Z",
+        default=0.0,
+    )
+
+    bound_radius: bpy.props.FloatProperty(
+        name="Bound Radius",
+        default=1.0,
+        min=0.0,
+    )
+
+    mh_texID: bpy.props.IntProperty(
+        description="Texture ID",
+        name="Texture ID",
+        default=0,
+        min = -3,
+        update=update_texture,  # Add this line to link the update method
+    )
+
+    specular_intensity: bpy.props.FloatProperty(
+        description="Specular Intensity",
+        name="Specular Intensity",
+        default=0.0,
+        min=0.0,
+        max=1.0,
+    )
+
+    texture_ambient_light: bpy.props.FloatProperty(
+        description="Texture Ambient Light",
+        name="Texture Ambient Light",
+        default=0.0,
+        min=0.0,
+        max=1.0,
+    )
+
+
 class Naomi_ISP_TSP_Properties(bpy.types.PropertyGroup):
     depthCompare : bpy.props.EnumProperty(
         description= "Depth Comparison Mode",
-        name = "Depth Compare", 
+        name = "Depth Compare",
         items = [('0', "Never",""),
                  ('1', "Less",""),
                  ('2', "Equal",""),
@@ -300,7 +449,7 @@ class Naomi_ISP_TSP_Properties(bpy.types.PropertyGroup):
     )
     culling : bpy.props.EnumProperty(
         description= "Culling Mode",
-        name = "Culling Mode", 
+        name = "Culling Mode",
         items = [('0', "No Culling",""),
                  ('1', "Cull if Small",""),
                  ('2', "Cull if Negative",""),
@@ -309,49 +458,49 @@ class Naomi_ISP_TSP_Properties(bpy.types.PropertyGroup):
     )
     zWrite : bpy.props.EnumProperty(
         description= "Z-Write",
-        name = "Z-Write", 
+        name = "Z-Write",
         items = [('0', "Enabled",""),
                  ('1', "Disabled",""),
                 ],
     )
     textureUsage : bpy.props.EnumProperty(
         description= "Texture Usage",
-        name = "Use Texture", 
+        name = "Use Texture",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
         ],
     )
     offsColorUsage : bpy.props.EnumProperty(
         description= "OffsetColor Usage",
-        name = "Use OffsetColor", 
+        name = "Use OffsetColor",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
                 ],
     )
     gouraudShdUsage : bpy.props.EnumProperty(
         description= "Gouraud Shading Usage",
-        name = "Gouraud Shading", 
+        name = "Gouraud Shading",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
                 ],
     )
     uvDataSize : bpy.props.EnumProperty(
         description= "Data Size of UV Floats",
-        name = "UV Float Size", 
+        name = "UV Float Size",
         items = [('0', "32-bit UV",""),
                  ('1', "16-bit UV",""),
                 ],
     )
     cacheBypass : bpy.props.EnumProperty(
         description= "Cache Bypass Usage",
-        name = "Cache Bypass", 
+        name = "Cache Bypass",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
                 ],
     )
     dCalcCtrl : bpy.props.EnumProperty(
         description= "D Calculation Control",
-        name = "D-Calc Ctrl", 
+        name = "D-Calc Ctrl",
         items = [('0', "Disabled",""),
                  ('1', "Use on Small Polys",""),
                 ],
@@ -385,18 +534,18 @@ class Naomi_TSP_Properties(bpy.types.PropertyGroup):
     )
     srcSelect : bpy.props.EnumProperty(
         description= "Selects the SRC Buffer",
-        name = "SRC Buffer Select", 
+        name = "SRC Buffer Select",
         items = [('0', "Primary Accumulation Buffer SRC",""),
                  ('1', "Secondary Accumulation Buffer SRC",""),
         ],
-    ) 
+    )
     dstSelect : bpy.props.EnumProperty(
         description= "Selects the DST Buffer",
-        name = "DST Buffer Select", 
+        name = "DST Buffer Select",
         items = [('0', "Primary Accumulation Buffer DST",""),
                  ('1', "Secondary Accumulation Buffer DST",""),
         ],
-    ) 
+    )
     fogOp : bpy.props.EnumProperty(
         description= "Fog Setting",
         name= "Fog Setting",
@@ -405,31 +554,31 @@ class Naomi_TSP_Properties(bpy.types.PropertyGroup):
                  ('2', "No Fog",""),
                  ('3', "LUT M2 (Look Up Table, Mode 2)",""),
         ],
-    ) 
+    )
     colorClamp : bpy.props.EnumProperty(
         description= "Sets color clamp mode",
-        name = "Color Clamp", 
+        name = "Color Clamp",
         items = [('0', "Underflow",""),
                  ('1', "Overflow",""),
         ],
     )
     alphaOp : bpy.props.EnumProperty(
         description= "Sets alpha mode",
-        name = "Alpha Mode", 
+        name = "Alpha Mode",
         items = [('0', "Opaque",""),
                  ('1', "Translucent",""),
         ],
     )
     alphaTexOp : bpy.props.EnumProperty(
         description= "Sets usage of texture alpha",
-        name = "Texture Alpha Usage", 
+        name = "Texture Alpha Usage",
         items = [('0', "Use Texture Alpha",""),
                  ('1', "Ignore Texture Alpha",""),
         ],
     )
     uvFlip : bpy.props.EnumProperty(
         description= "Sets UV flipping",
-        name = "UV Flip Mode", 
+        name = "UV Flip Mode",
         items = [('0', "No Flipping",""),
                  ('1', "Flip Y",""),
                  ('2', "Flip X",""),
@@ -438,7 +587,7 @@ class Naomi_TSP_Properties(bpy.types.PropertyGroup):
     )
     uvClamp : bpy.props.EnumProperty(
         description= "Sets UV clamping",
-        name = "UV Clamp Mode", 
+        name = "UV Clamp Mode",
         items = [('0', "No Clamping",""),
                  ('1', "Clamp Y",""),
                  ('2', "Clamp X",""),
@@ -447,7 +596,7 @@ class Naomi_TSP_Properties(bpy.types.PropertyGroup):
     )
     filter : bpy.props.EnumProperty(
         description= "Sets texture filtering",
-        name = "Texture Filter", 
+        name = "Texture Filter",
         items = [('0', "Point Sampled",""),
                  ('1', "Bilinear Filter",""),
                  ('2', "Tri-linear Pass A",""),
@@ -456,14 +605,14 @@ class Naomi_TSP_Properties(bpy.types.PropertyGroup):
     )
     supSample : bpy.props.EnumProperty(
         description= "Sets super-sampling of texture",
-        name = "Texture Super-Sample", 
+        name = "Texture Super-Sample",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
         ],
     )
     mipmapDAdj : bpy.props.EnumProperty(
         description= "Mipmap D Adjust Setting",
-        name = "Mipmap D Adjust", 
+        name = "Mipmap D Adjust",
         items = [( '1', "0.25",""),
                  ( '4', "1.00",""),
                  ('16', "3.75",""),
@@ -472,7 +621,7 @@ class Naomi_TSP_Properties(bpy.types.PropertyGroup):
     )
     texShading : bpy.props.EnumProperty(
         description= "Texture/Shading",
-        name = "Texture/Shading", 
+        name = "Texture/Shading",
         items = [('0', "Decal [PIXrgb = TEXrgb + OFFSETrgb]  [PIXa = TEXa]",""),
                  ('1', "Modulate [PIXrgb = COLrgb * TEXrgb + OFFSETrgb]  [PIXa = TEXa]",""),
                  ('2', "Decal Alpha [PIXrgb = (TEXrgb + TEXa) + (COLrgb * (1-TEXa)) + OFFSETrgb]  [PIXa = COLa]",""),
@@ -504,20 +653,20 @@ class Naomi_TSP_Properties(bpy.types.PropertyGroup):
                  ('6', "Height:  512 px",""),
                  ('7', "Height: 1024 px",""),
         ],
-    )      
-    
+    )
+
 class Naomi_TexCtrl_Properties(bpy.types.PropertyGroup):
     mipMapped : bpy.props.BoolProperty(
         description= "Is texture mipmapped?",
         name = "Mipmapped",
-    ) 
+    )
     vqCompressed : bpy.props.BoolProperty(
         description= "Is texture VQ Compressed?",
         name = "VQ Compressed",
-    )    
+    )
     pixelFormat : bpy.props.EnumProperty(
         description= "Texture Pixel Format",
-        name = "Pixel Format", 
+        name = "Pixel Format",
         items = [('0', "ARGB1555",""),
                     ('1', "RGB565",""),
                     ('2', "ARGB4444",""),
@@ -530,38 +679,81 @@ class Naomi_TexCtrl_Properties(bpy.types.PropertyGroup):
     )
     scanOrder : bpy.props.EnumProperty(
         description= "Texture Pixel Scan Order",
-        name = "Scan Order", 
+        name = "Scan Order",
         items = [('0', "Twiddled",""),
                  ('1', "Non-Twiddled",""),
                 ],
     )
     texCtrlUstride : bpy.props.EnumProperty(
         description= "Use Texture Control for U Stride",
-        name = "TexCtrl U-Stride", 
+        name = "TexCtrl U-Stride",
         items = [('0', "Disabled",""),
                  ('1', "Enabled",""),
             ],
-    )  
+    )
 
-    
+
 class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
     bl_label = "Naomi Properties"
     bl_idname = "OBJECT_PT_Naomi_Properties"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_category = "Naomi"
-    
+
     @classmethod
     def poll(self, context):
         return context.active_object is not None
-    
+
     def draw(self, context):
         active = context.active_object
         layout = self.layout
-        
+
         layout.label(text= "Parameters")
         naomi_param_p = active.naomi_param
         box = layout.box()
+
+        # Add Centroid parameters
+        row = box.row()
+        row.label(text="Centroid X:")
+        row.prop(naomi_param_p, "centroid_x", text="")
+
+        row = box.row()
+        row.label(text="Centroid Y:")
+        row.prop(naomi_param_p, "centroid_y", text="")
+
+        row = box.row()
+        row.label(text="Centroid Z:")
+        row.prop(naomi_param_p, "centroid_z", text="")
+
+        row = box.row()
+        row.label(text="Bound Radius:")
+        row.prop(naomi_param_p, "bound_radius", text="")
+
+        # Add mesh color properties
+        row = box.row()
+        row.label(text="Base Color:")
+        row.prop(naomi_param_p, "meshColor",text="")
+
+        row = box.row()
+        row.label(text="Offset Color:")
+        row.prop(naomi_param_p, "meshOffsetColor",text="")
+
+        # Texture ID
+        row = box.row()
+        row.label(text="Texture ID")
+        row.prop(naomi_param_p,"mh_texID", text="")
+
+        # Specular Intensity
+        row = box.row()
+        row.label(text="Specular Intensity:")
+        row.prop(naomi_param_p, "specular_intensity", text="")
+
+        # Texture Ambient Light
+        row = box.row()
+        row.label(text="Texture Ambient Light:")
+        row.prop(naomi_param_p, "texture_ambient_light", text="")
+
+        # Other params
         box.prop(naomi_param_p, "paramType")        # 31-29
         box.prop(naomi_param_p, "endOfStrip")       # 28
         box.prop(naomi_param_p, "listType")         # 26-24
@@ -575,40 +767,40 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
         box.prop(naomi_param_p, "offsColorUsage")   # 2
         box.prop(naomi_param_p, "gouraudShdUsage")  # 1
         box.prop(naomi_param_p, "uvDataSize")       # 0
-        
+
         layout.label(text= "ISP/TSP")
         naomi_isp_tsp_p = active.naomi_isp_tsp
         box = layout.box()
         box.prop(naomi_isp_tsp_p, "depthCompare")
         box.prop(naomi_isp_tsp_p, "culling")
         box.prop(naomi_isp_tsp_p, "zWrite")
-        box.prop(naomi_isp_tsp_p, "textureUsage")   
-        box.prop(naomi_isp_tsp_p, "offsColorUsage")  
+        box.prop(naomi_isp_tsp_p, "textureUsage")
+        box.prop(naomi_isp_tsp_p, "offsColorUsage")
         box.prop(naomi_isp_tsp_p, "gouraudShdUsage")
-        box.prop(naomi_isp_tsp_p, "uvDataSize")   
-        box.prop(naomi_isp_tsp_p, "cacheBypass") 
-        box.prop(naomi_isp_tsp_p, "dCalcCtrl") 
-        
+        box.prop(naomi_isp_tsp_p, "uvDataSize")
+        box.prop(naomi_isp_tsp_p, "cacheBypass")
+        box.prop(naomi_isp_tsp_p, "dCalcCtrl")
+
         layout.label(text= "TSP")
         naomi_tsp_p = active.naomi_tsp
         box = layout.box()
         box.prop(naomi_tsp_p, "srcAlpha")
         box.prop(naomi_tsp_p, "dstAlpha")
         box.prop(naomi_tsp_p, "srcSelect")
-        box.prop(naomi_tsp_p, "dstSelect")   
-        box.prop(naomi_tsp_p, "fogOp")  
+        box.prop(naomi_tsp_p, "dstSelect")
+        box.prop(naomi_tsp_p, "fogOp")
         box.prop(naomi_tsp_p, "colorClamp")
-        box.prop(naomi_tsp_p, "alphaOp")   
-        box.prop(naomi_tsp_p, "alphaTexOp") 
-        box.prop(naomi_tsp_p, "uvFlip")   
-        box.prop(naomi_tsp_p, "uvClamp")  
+        box.prop(naomi_tsp_p, "alphaOp")
+        box.prop(naomi_tsp_p, "alphaTexOp")
+        box.prop(naomi_tsp_p, "uvFlip")
+        box.prop(naomi_tsp_p, "uvClamp")
         box.prop(naomi_tsp_p, "filter")
         box.prop(naomi_tsp_p, "supSample")
-        box.prop(naomi_tsp_p, "mipmapDAdj")   
-        box.prop(naomi_tsp_p, "texShading") 
+        box.prop(naomi_tsp_p, "mipmapDAdj")
+        box.prop(naomi_tsp_p, "texShading")
         box.prop(naomi_tsp_p, "texUSize")
-        box.prop(naomi_tsp_p, "texVSize") 
-        
+        box.prop(naomi_tsp_p, "texVSize")
+
         layout.label(text= "Texture Control")
         naomi_tex_ctrl = active.naomi_texCtrl
         box = layout.box()
@@ -618,8 +810,8 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
         box.prop(naomi_tex_ctrl, "pixelFormat")
         box.prop(naomi_tex_ctrl, "scanOrder")
         box.prop(naomi_tex_ctrl, "texCtrlUstride")
-  
-        
+
+
 classes = [Naomi_GlobalParam_0, Naomi_GlobalParam_1, COL_PT_collection_gps, Naomi_Param_Properties, Naomi_ISP_TSP_Properties, Naomi_TSP_Properties, Naomi_TexCtrl_Properties, OBJECT_PT_Naomi_Properties]
 
 # Only needed if you want to add into a dynamic menu
@@ -638,17 +830,17 @@ def register():
     bpy.types.Object.naomi_texCtrl = bpy.props.PointerProperty(type= Naomi_TexCtrl_Properties)
     bpy.types.Collection.gp0 = bpy.props.PointerProperty(type= Naomi_GlobalParam_0)
     bpy.types.Collection.gp1 = bpy.props.PointerProperty(type= Naomi_GlobalParam_1)
-    
+
 def unregister():
     bpy.utils.unregister_class(ImportNL)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
     #bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
     for cls in classes:
         bpy.utils.unregister_class(cls)
-    del bpy.types.Object.naomi_param   
+    del bpy.types.Object.naomi_param
     del bpy.types.Object.naomi_isp_tsp
     del bpy.types.Object.naomi_tsp
-    del bpy.types.Object.naomi_texCtrl 
+    del bpy.types.Object.naomi_texCtrl
     del bpy.types.Collection.gp0
     del bpy.types.Collection.gp1
 
