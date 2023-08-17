@@ -2,7 +2,7 @@ bl_info = {
     "name" : "NaomiLib Importer for Blender",
     "author" : "zocker_160, VincentNL, TVIndustries",
     "description" : "Addon for importing NaomiLib .bin/.raw files",
-    "blender" : (2, 90, 1),
+    "blender" : (3, 4, 1),
     "version" : (0, 13, 2),
     "location" : "File > Import",
     "warning" : "",
@@ -20,14 +20,9 @@ from bpy_extras.io_utils import ImportHelper, path_reference_mode
 
 
 importlib.reload(NLi)
-cleanup_ctr = False
+
 
 def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fScaling: float, bDebug: bool, bOrientation, bNegScale_X: bool):
-    global cleanup_ctr  # If it has been cleaned up
-    if bCleanup:
-        if cleanup_ctr == False:
-            print("CLEANING UP")
-            NLi.cleanup()
 
     ret = False
 
@@ -78,7 +73,6 @@ class ImportNL(bpy.types.Operator, ImportHelper):
         max=1,
     )
 
-
     setting_debug: BoolProperty(
         name="enable debugging",
         description="enables debugging mode and prints useful information into log",
@@ -99,19 +93,24 @@ class ImportNL(bpy.types.Operator, ImportHelper):
         default=True
     )
 
-
     def execute(self, context):
-        global cleanup_ctr
-        cleanup_ctr=False
         if self.load_directory:
+            if self.setting_cleanup:
+                NLi.cleanup()
             folder_path = os.path.dirname(self.filepath)
             for filename in os.listdir(folder_path):
                 if filename.endswith(".bin") or filename.endswith(".raw"):
                     file_path = os.path.join(folder_path, filename)
-                    import_nl(self, context, filepath=file_path, bCleanup=self.setting_cleanup, bArchive=self.setting_archive, fScaling=self.setting_scaling, bDebug=self.setting_debug, bOrientation=self.orientation, bNegScale_X=self.negative_x_scale_enabled)
-                cleanup_ctr=True
+                    import_nl(self, context, filepath=file_path, bCleanup=self.setting_cleanup,
+                              bArchive=self.setting_archive, fScaling=self.setting_scaling, bDebug=self.setting_debug,
+                              bOrientation=self.orientation, bNegScale_X=self.negative_x_scale_enabled)
+
         else:
-            import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup, bArchive=self.setting_archive, fScaling=self.setting_scaling, bDebug=self.setting_debug, bOrientation=self.orientation, bNegScale_X=self.negative_x_scale_enabled)
+            if self.setting_cleanup:
+                NLi.cleanup()
+            import_nl(self, context, filepath=self.filepath, bCleanup=self.setting_cleanup,
+                      bArchive=self.setting_archive, fScaling=self.setting_scaling, bDebug=self.setting_debug,
+                      bOrientation=self.orientation, bNegScale_X=self.negative_x_scale_enabled)
 
         return {'FINISHED'}
 
@@ -218,6 +217,7 @@ def update_texture(self, context):
 
     if active_obj and active_obj.type == 'MESH':
         texture_filepaths = set()  # Use a set for faster membership checking
+
         mh_texID = self.mh_texID
         textureFileFormats = ('png', 'tga')
 
@@ -247,6 +247,10 @@ def update_texture(self, context):
                                 loaded_image = bpy.data.images.load(texPath)
                                 tex_node.image = loaded_image
                                 texture_filepaths.add(texPath)
+
+                    # Prevent edit box to assign Negative values
+                    if self.mh_texID < 0:
+                        self.mh_texID = 0  # Set the value to 0 if it's negative
 
                     bpy.context.area.tag_redraw()
     else:
@@ -411,17 +415,47 @@ class Naomi_Param_Properties(bpy.types.PropertyGroup):
     mh_texID: bpy.props.IntProperty(
         description="Texture ID",
         name="Texture ID",
-        default=0,
-        min = -3,
-        update=update_texture,  # Add this line to link the update method
+        default=-1,  # Set the default value to -1
+        min=-1,  # Update the minimum value to -1
+        max = 1000,
+        update=update_texture,
     )
 
-    specular_intensity: bpy.props.FloatProperty(
+    stripLen : bpy.props.EnumProperty(
+        description= "Strip Length",
+        name = "Strip Length",
+        items = [('0', "1 Strip",""),
+                 ('1', "2 Strips",""),
+                 ('2', "4 Strips",""),
+                 ('3', "6 Strips",""),
+        ],
+    )
+
+    m_shad_type: bpy.props.EnumProperty(
+        name="Shading",
+        description="Type of shading",
+        items=[('0', "Lambert", ""),
+               ('-1', "Constant (Flat)", ""),
+               ('-2', "Bump", ""),
+               ('-3', "Vertex Colors", ""),
+               ],
+    )
+
+    m_tex_shading: bpy.props.IntProperty(
+        name="Shading Type",
+        description="Type of shading",
+        default=0,
+
+    )
+
+
+    spec_int: bpy.props.IntProperty(
         description="Specular Intensity",
         name="Specular Intensity",
-        default=0.0,
-        min=0.0,
-        max=1.0,
+        default=0,
+        min=0,
+        max = 100,
+
     )
 
     texture_ambient_light: bpy.props.FloatProperty(
@@ -741,12 +775,24 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
         # Texture ID
         row = box.row()
         row.label(text="Texture ID")
-        row.prop(naomi_param_p,"mh_texID", text="")
+        if naomi_param_p.mh_texID < 0:
+            row.label(text="No Texture")  # -1
+        else:
+            row.prop(naomi_param_p,"mh_texID", text="")
 
-        # Specular Intensity
+
+
+        # Shading Type
         row = box.row()
-        row.label(text="Specular Intensity:")
-        row.prop(naomi_param_p, "specular_intensity", text="")
+        row.label(text="Shading Type")
+        #row.label(text=str(naomi_param_p.m_tex_shading))
+        row.prop(naomi_param_p,"m_shad_type", text="")
+
+        if naomi_param_p.m_tex_shading >= 0:
+            # Specular Intensity
+            row = box.row()
+            row.label(text="Specular Intensity:")
+            row.prop(naomi_param_p, "spec_int", text="")
 
         # Texture Ambient Light
         row = box.row()
