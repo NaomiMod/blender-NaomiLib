@@ -478,21 +478,21 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
             print("Texture ID: " + str(t_var))
 
         # 7. texture shading
-        global m_tex_shading, spec_int
+
         m_tex_shading = read_sint32_buff()
         # spec_int = m_tex_shading / 10     Original, but currently not giving accurate results
-        spec_int = spec_to_float(m_tex_shading)  # WIP
+        spec_int= m_tex_shading
 
         if debug:
 
             if m_tex_shading == -3:
                 t_var2 = ("Vertex Colors Mode")
             elif m_tex_shading == -2:
+                t_var2 = ("Bump Mode")
+            elif m_tex_shading == -1:
                 t_var2 = ("Constant Mode")
-            elif m_tex_shading == 0:
-                t_var2 = ("Lambert Mode")
             else:
-                t_var2 = (f"Specular Intensity: {spec_int}")
+                t_var2 = (f"Lambert Mode - Specular Intensity: {spec_int}")
 
             print("\n" + "-----Mesh_Texture_Shading-----" + "\n")
             print(f"[{m_tex_shading}] {t_var2}")
@@ -542,7 +542,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
             print("\n" + "-----Mesh_Size-----" + "\n")
             print(f"Mesh Data Size: {hex(mesh_end_offset)}")
 
-        m_Headers = (l_Parameter_Header, l_ISP_TSP_Header, l_TSP_Header, l_texCtrl_Header, m_texID)
+        m_Headers = (l_Parameter_Header, l_ISP_TSP_Header, l_TSP_Header, l_texCtrl_Header, m_texID,m_tex_shading)
         return m_Headers
 
     ##############################
@@ -603,17 +603,17 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
         norm_sint8_z = sint8_to_float(int.from_bytes(nlfile.read(0x1), "little"))
         nlfile.read(0x1)  # zero byte
 
-        vtx_col1_A = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
-        vtx_col1_R = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
-        vtx_col1_G = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
         vtx_col1_B = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
-        vtx_col2_A = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
-        vtx_col2_R = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
-        vtx_col2_G = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col1_G = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col1_R = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col1_A = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
         vtx_col2_B = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col2_G = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col2_R = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
+        vtx_col2_A = col_hex_to_float(int.from_bytes(nlfile.read(0x1), "little"))
 
         normal.append((norm_sint8_x, norm_sint8_y, norm_sint8_z))
-        vert_col.append((vtx_col1_R, vtx_col1_G, vtx_col1_B, vtx_col2_A))
+        vert_col.append((vtx_col1_R, vtx_col1_G, vtx_col1_B, vtx_col1_A))
 
         if debug: print(
             f"(normals: x,y,z: {normal}\nvtx_col1: ARGB:{vtx_col1_A} {vtx_col1_R} {vtx_col1_G} {vtx_col1_B}\n"
@@ -627,6 +627,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     mesh_faces = list()
     mesh_colors = list()
     mesh_offcolors = list()
+    mesh_vertcol = list()
     m_headr_grps = list()
 
     nlfile.seek(0x64)  # size of mesh
@@ -641,8 +642,6 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 
             nlfile.seek(0x18)  # first mesh parameters always start at 0x18
             m_headr_grps.append(mesh_param())
-
-
         else:
             if debug:
                 print(nlfile.tell())
@@ -650,6 +649,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
             nlfile.seek(nlfile.tell() - 0x4, 0x0)  # Get ready to read mesh params
             m_headr_grps.append(mesh_param())  # read mesh header parameters
             nlfile.seek(-0x4, 0x1)  # Continue to read file
+            #print(m_headr_grps[-1][-1])
 
             if debug: print(nlfile.tell())
 
@@ -657,8 +657,11 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 
             if debug: print("MESH END offset m > 0:", mesh_end_offset)
 
+        #print(m_headr_grps[0][5])
+        m_tex_shading=m_headr_grps[-1][-1]
         faces_vertex = list()
         faces_index = list()
+        vert_col = list()
 
         f = 0
         vertex_index_last = 0
@@ -689,7 +692,9 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
             vertex = list()
             normal = list()
             texture_uv = list()
-            vert_col = list()
+
+
+            #mesh_vertcol = list()
 
             for _ in range(n_vertex):
                 # check if Type A or Type B vertex
@@ -708,6 +713,8 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 
                 if m_tex_shading == -3:  # It's TypeC vertex format, get sint8 normals and vert colors
                     type_c()
+                    #print(f"vert_col:\n{vert_col}\nmesh_vertcol\n{mesh_vertcol}")
+                    #mesh_vertcol.append(vert_col)
                 else:
                     normal.append(read_point3_buff())
 
@@ -769,6 +776,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
         })
 
         mesh_faces.append(faces_index)
+        mesh_vertcol.append (vert_col)
 
         m += 1
 
@@ -804,7 +812,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 
         mesh_vertices.append(points)
         mesh_uvs.append(textures)
-        # print(f"vertex_color list: {vert_col}")
+        #print(f"vertex_color list: {vert_col}")
 
     if debug: print("number of meshes found:", m)
     # print(meshes[0]['face_vertex'][0]['point'][1])
@@ -823,7 +831,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     # mesh_faces[mesh_index][face_index][0|1|2]
     ####
 
-    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors,mesh_offcolors, m_headr_grps, gflag_headers
+    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors,mesh_offcolors,mesh_vertcol, m_headr_grps, gflag_headers
 
 
 ########################
@@ -841,6 +849,9 @@ def cleanup():
         if block.users == 0:
             bpy.data.meshes.remove(block)
 
+    for img in bpy.data.images:
+            bpy.data.images.remove(img)
+
 
 def redraw():
     for area in bpy.context.screen.areas:
@@ -848,9 +859,7 @@ def redraw():
             area.tag_redraw()
 
 
-
-
-def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, meshOffColors:list, mesh_headers: list,
+def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, meshOffColors:list,vertexColors:list, mesh_headers: list,
                  parent_col: bpy.types.Collection, scale: float, p_filepath: str, debug=False):
 
     if debug: print("meshes:", len(meshes))
@@ -922,13 +931,23 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_object.naomi_texCtrl.pixelFormat = str(mesh_headers[i][3][2])
         new_object.naomi_texCtrl.scanOrder = str(mesh_headers[i][3][3])
         new_object.naomi_texCtrl.texCtrlUstride = str(mesh_headers[i][3][4])
+
+        new_object.naomi_param.m_tex_shading = mesh_headers[i][5]
+        new_object.naomi_param.spec_int = mesh_headers[i][5]
         new_object.naomi_param.mh_texID = mesh_headers[i][4]
         new_object.naomi_param.meshColor = meshColors[i]
         new_object.naomi_param.meshOffsetColor = meshOffColors[i]
+        new_object.naomi_param.m_shad_type = '0' if mesh_headers[i][5] >= 0 else str(mesh_headers[i][5])
 
         mh_texID = mesh_headers[i][4]
+        spec_int = mesh_headers[i][5]
 
-        print("new object", new_object.name, '; has tex ID: TexID_{0:03d}'.format(mh_texID))
+        # Convert specular intensity WIP
+        if spec_int >-1:
+            spec_val = 1.0 if spec_int == 0 else 1.0 / spec_int if spec_int <= 5 else 1.0 / spec_int + 0.02
+        else:spec_val = 0.0
+
+        if debug:print("new object", new_object.name, '; has tex ID: TexID_{0:03d}'.format(mh_texID))
 
         # print(texPath)
         # add viewport color to object
@@ -948,8 +967,25 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         color_input.default_value = meshColors[i]
         alpha_input.default_value = meshColors[i][3]
         coloroff_input.default_value = meshOffColors[i]
+        # Connect the texture node to the desired input node (e.g., Principled BSDF)
+        input_node = material_node_tree.nodes.get('Principled BSDF')
 
-        # Inside the mh_texID >= 0 block:
+        # Create Vertex Colors Layer
+        if mesh_headers[i][5] == -3:
+            # Create a new vertex color layer
+            color_layer = new_mesh.vertex_colors.new(name=f"VCol_mesh_{i}")
+
+            # Assign vertex colors to the new layer
+            for p, polygon in enumerate(new_mesh.polygons):
+                for l, index in enumerate(polygon.loop_indices):
+                    vertex_color = vertexColors[i][faces[i][p][l]]
+                    color_layer.data[index].color = vertex_color
+
+        if debug:print("vertex colors:",vertexColors[i])
+
+
+        # Texture plus Vertex Colors:
+
         if mh_texID >= 0:
             texture_filepaths = [] # Initialize textures filepath list
 
@@ -964,40 +1000,86 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
             # Check if texture file uses one of the specified formats:
             for format in textureFileFormats:
                 potential_tex_path = texDir + texFileName + '.' + format
+
+                # If Texture file exists
                 if os.path.exists(potential_tex_path):
                     texPath = potential_tex_path
+                    for img in bpy.data.images:
+                        if img.filepath == texPath:
+                            texture_filepaths.append(texPath)
+
+                    # Check if the texture path is unique
+                    if texPath not in texture_filepaths:
+                        new_texture = bpy.data.images.load(texPath)
+                    else:
+                        # Use the already loaded texture
+                        existing_texture = [img for img in bpy.data.images if img.filepath == texPath][0]
+                        new_texture = existing_texture
+
+                    texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
+                    texture_node.image = new_texture
+
+                    # Connect the texture node to the desired input node (Principled BSDF)
+                    input_node = material_node_tree.nodes.get('Principled BSDF')
+                    material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
+                    if new_object.naomi_param.listType == '0':
+                        texture_node.image.alpha_mode = "NONE"
+                        new_mat.blend_method = "OPAQUE"
+                    else:
+                        texture_node.image.alpha_mode = "CHANNEL_PACKED"
+                        new_mat.blend_method = "HASHED"
+
+                    # If Vertex Colors
+                    if mesh_headers[i][5] == -3:
+
+                        # Create a Vertex Color Attribute node
+                        vertex_color_node = material_node_tree.nodes.new('ShaderNodeVertexColor')
+                        vertex_color_node.layer_name = f"VCol_mesh_{i}"
+
+                        # Create a Mix Color node
+                        mix_color_node = material_node_tree.nodes.new('ShaderNodeMixRGB')
+                        mix_color_node.blend_type = 'MIX'
+                        mix_color_node.inputs[0].default_value = 1.0
+                        mix_color_node.use_alpha = False
+
+                        # Connect the Vertex Attribute node to Mix Color node A input
+                        material_node_tree.links.new(vertex_color_node.outputs['Color'], mix_color_node.inputs[1])
+
+                        # Connect the Texture node to Mix Color node B input
+                        material_node_tree.links.new(texture_node.outputs['Color'], mix_color_node.inputs[2])
+
+                        # Connect the Mix Color's Result output node to Principled BSDF Base Color input node
+                        material_node_tree.links.new(mix_color_node.outputs['Color'], input_node.inputs['Base Color'])
+
+                    else:
+                        material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
+
                     break
 
-            for img in bpy.data.images:
-                if img.filepath == texPath:
-                    texture_filepaths.append(texPath)
+                # Texture file not found, but have Vertex Colors
+                else:
 
-            # Check if the texture path is unique
-            if texPath not in texture_filepaths:
-                new_texture = bpy.data.images.load(texPath)
-            else:
-                # Use the already loaded texture
-                existing_texture = [img for img in bpy.data.images if img.filepath == texPath][0]
-                new_texture = existing_texture
+                    if mesh_headers[i][5] == -3:
+                        # Create a Vertex Color Attribute node
+                        vertex_color_node = material_node_tree.nodes.new('ShaderNodeVertexColor')
+                        vertex_color_node.layer_name = f"VCol_mesh_{i}"
+                        material_node_tree.links.new(vertex_color_node.outputs['Color'],
+                                                     input_node.inputs['Base Color'])
 
-            texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
-            texture_node.image = new_texture
+        # No Texture
+        elif mh_texID == -1:
 
-            # Connect the texture node to the desired input node (e.g., Principled BSDF)
-            input_node = material_node_tree.nodes.get('Principled BSDF')
-            material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
-            material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
-            if new_object.naomi_param.listType == '0':
-                texture_node.image.alpha_mode = "NONE"
-                new_mat.blend_method = "OPAQUE"
-            else:
-                texture_node.image.alpha_mode = "CHANNEL_PACKED"
-                new_mat.blend_method = "HASHED"
+            # If Vertex Colors
+            if mesh_headers[i][5] == -3:
+
+                # Create a Vertex Color Attribute node
+                vertex_color_node = material_node_tree.nodes.new('ShaderNodeVertexColor')
+                vertex_color_node.layer_name = f"VCol_mesh_{i}"
+
+                material_node_tree.links.new(vertex_color_node.outputs['Color'], input_node.inputs['Base Color'])
 
 
-
-
-        new_mat.roughness = spec_int
+        new_mat.roughness = spec_val
         new_mat.metallic = 0.0
 
         new_object.data.materials.append(new_mat)
@@ -1021,7 +1103,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
     filename = filepath.split(os.sep)[-1]
     print('\n\n' + filename + '\n\n')
 
-    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors,mesh_offcolors, mesh_header_s, g_headers = parse_nl(NL, orientation, NegScale_X,
+    mesh_vertex, mesh_uvs, faces, meshes, mesh_colors,mesh_offcolors, mesh_vertcol,mesh_header_s, g_headers = parse_nl(NL, orientation, NegScale_X,
                                                                                            debug=debug)
 
     # create own collection for each imported file
@@ -1035,7 +1117,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
 
     bpy.context.scene.collection.children.link(obj_col)
 
-    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, meshOffColors=mesh_offcolors,mesh_headers=mesh_header_s,
+    return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, meshOffColors=mesh_offcolors,vertexColors=mesh_vertcol,mesh_headers=mesh_header_s,
                         parent_col=obj_col, scale=scaling, p_filepath=filepath,
                         debug=debug)
 
@@ -1077,13 +1159,13 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
             f.seek(start_offset)
             if debug: print("NEW child start offset:", start_offset)
             if debug: print("NEW child end offset:", end_offset)
-            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors,mesh_header_s = parse_nl(
+            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors,mesh_vertcol,mesh_header_s = parse_nl(
                 f.read(end_offset - start_offset), debug=debug)
 
             sub_col = bpy.data.collections.new(f"child_{i}")
             obj_col.children.link(sub_col)
 
-            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors,meshOffColors=mesh_offcolors,
+            if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors,meshOffColors=mesh_offcolors,vertexColors=mesh_vertcol,
                                 mesh_headers=mesh_header_s, parent_col=sub_col,
                                 scale=scaling, p_filepath=filepath, debug=debug): return False
             f.seek(st_p)
