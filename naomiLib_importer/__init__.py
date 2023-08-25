@@ -3,7 +3,7 @@ bl_info = {
     "author" : "zocker_160, VincentNL, TVIndustries",
     "description" : "Addon for importing NaomiLib .bin/.raw files",
     "blender" : (3, 4, 1),
-    "version" : (0, 13, 2),
+    "version" : (0, 14, 2),
     "location" : "File > Import",
     "warning" : "",
     "category" : "Import",
@@ -17,6 +17,8 @@ from . import NLimporter as NLi
 from bpy.props import FloatVectorProperty
 from bpy.props import StringProperty, BoolProperty, FloatProperty
 from bpy_extras.io_utils import ImportHelper, path_reference_mode
+import tempfile
+import subprocess
 
 
 importlib.reload(NLi)
@@ -248,10 +250,9 @@ def update_texture(self, context):
                                 tex_node.image = loaded_image
                                 texture_filepaths.add(texPath)
 
-                    # Prevent edit box to assign Negative values
-                    if self.mh_texID < 0:
-                        self.mh_texID = 0  # Set the value to 0 if it's negative
-
+                # Prevent edit box to assign Negative values
+                if self.mh_texID < 0:
+                    self.mh_texID = 0  # Set the value to 0 if it's negative
                     bpy.context.area.tag_redraw()
     else:
         print("No active mesh object with materials found.")
@@ -727,12 +728,16 @@ class Naomi_TexCtrl_Properties(bpy.types.PropertyGroup):
     )
 
 
+
+
 class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
     bl_label = "Naomi Properties"
     bl_idname = "OBJECT_PT_Naomi_Properties"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_category = "Naomi"
+
+
 
     @classmethod
     def poll(self, context):
@@ -780,19 +785,19 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
         else:
             row.prop(naomi_param_p,"mh_texID", text="")
 
-
-
         # Shading Type
         row = box.row()
         row.label(text="Shading Type")
         #row.label(text=str(naomi_param_p.m_tex_shading))
         row.prop(naomi_param_p,"m_shad_type", text="")
 
+        # Specular Intensity
+        row = box.row()
+        row.label(text="Specular Intensity:")
         if naomi_param_p.m_tex_shading >= 0:
-            # Specular Intensity
-            row = box.row()
-            row.label(text="Specular Intensity:")
             row.prop(naomi_param_p, "spec_int", text="")
+        else:
+            row.label(text="Not Specified")
 
         # Texture Ambient Light
         row = box.row()
