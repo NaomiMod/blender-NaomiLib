@@ -451,6 +451,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
         m_centr_y = read_float_buff()
         m_centr_z = read_float_buff()
         m_bound_radius = read_float_buff()
+        m_centroid.append((m_centr_x,m_centr_y,m_centr_z,m_bound_radius))
 
         if debug:
             model_log += (
@@ -460,6 +461,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                 f"mesh_centroid: z = {m_centr_z}\n"
                 f"mesh_bnd_radius: = {m_bound_radius}\n"
             )
+
 
         # 6. texture ID
 
@@ -638,6 +640,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     mesh_offcolors = list()
     mesh_vertcol = list()
     m_headr_grps = list()
+    m_centroid = list()
 
     nlfile.seek(0x64)  # size of mesh
     mesh_end_offset = read_uint32_buff() + 0x64
@@ -839,7 +842,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     # mesh_faces[mesh_index][face_index][0|1|2]
     ####
 
-    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors,mesh_offcolors,mesh_vertcol, m_headr_grps, gflag_headers
+    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors,mesh_offcolors,mesh_vertcol, m_headr_grps, gflag_headers,m_centroid
 
 
 ########################
@@ -868,7 +871,7 @@ def redraw():
 
 
 def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, meshOffColors:list,vertexColors:list, mesh_headers: list,
-                 parent_col: bpy.types.Collection, scale: float, p_filepath: str, debug=False):
+                 mesh_Centroid: list,parent_col: bpy.types.Collection, scale: float, p_filepath: str, debug=False):
 
     if debug: print("meshes:", len(meshes))
 
@@ -947,8 +950,19 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_object.naomi_param.meshOffsetColor = meshOffColors[i]
         new_object.naomi_param.m_shad_type = '0' if mesh_headers[i][5] >= 0 else str(mesh_headers[i][5])
 
+        new_object.naomi_param.centroid_x = mesh_Centroid[i][0]
+        new_object.naomi_param.centroid_y = mesh_Centroid[i][1]
+        new_object.naomi_param.centroid_z = mesh_Centroid[i][2]
+        new_object.naomi_param.bound_radius = mesh_Centroid[i][3]
+
         mh_texID = mesh_headers[i][4]
         spec_int = mesh_headers[i][5]
+
+
+
+
+
+
 
         # Convert specular intensity WIP
         if spec_int >-1:
@@ -1034,7 +1048,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
                         texture_node.image.alpha_mode = "NONE"
 
                     else:
-                        new_mat.blend_method = "HASHED"
+                        new_mat.blend_method = "BLEND"
                         texture_node.image.alpha_mode = "CHANNEL_PACKED"
 
                         material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
@@ -1109,7 +1123,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         if debug:
             model_log = ''
 
-        mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors, mesh_vertcol, mesh_header_s, g_headers = parse_nl(
+        mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors, mesh_vertcol, mesh_header_s, g_headers,m_centroid= parse_nl(
             NL, orientation, NegScale_X,
             debug=debug)
         if debug:
@@ -1134,7 +1148,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         bpy.context.scene.collection.children.link(obj_col)
 
         return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, meshOffColors=mesh_offcolors,
-                            vertexColors=mesh_vertcol, mesh_headers=mesh_header_s,
+                            vertexColors=mesh_vertcol, mesh_headers=mesh_header_s,mesh_Centroid=m_centroid,
                             parent_col=obj_col, scale=scaling, p_filepath=filepath,
                             debug=debug)
 
@@ -1177,14 +1191,14 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
             f.seek(start_offset)
             if debug: print("NEW child start offset:", start_offset)
             if debug: print("NEW child end offset:", end_offset)
-            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors,mesh_vertcol,mesh_header_s = parse_nl(
+            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors,mesh_vertcol,mesh_header_s,m_centroid = parse_nl(
                 f.read(end_offset - start_offset), debug=debug)
 
             sub_col = bpy.data.collections.new(f"child_{i}")
             obj_col.children.link(sub_col)
 
             if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors,meshOffColors=mesh_offcolors,vertexColors=mesh_vertcol,
-                                mesh_headers=mesh_header_s, parent_col=sub_col,
+                                mesh_headers=mesh_header_s,mesh_Centroid=m_centroid, parent_col=sub_col,
                                 scale=scaling, p_filepath=filepath, debug=debug): return False
             f.seek(st_p)
             start_offset = end_offset
