@@ -12,13 +12,16 @@ The release version is able to open 3D models in NL format and variation used by
 
 - Loads 3D models with original texture U/V
 
-Import function has three options:
+Import function has several options:
 
+1. Load Directory, to load all models in the same folder.
 1. Clean scene (Clean up the current scene before import)
 2. Scale factor (Especially useful to reduce Super / Monkey Balls huge 3D backgrounds)
-3. Lz_p (3D model containers used by Super Monkey Ball on GameCube)
+3. Lz_p (3D model containers used by Super Monkey Ball on GameCube) Limited support
+4. Orientation (Z-Up / -X Default)
+5. Debugging
 
-![alt text](https://i.imgur.com/dg4QDzU.png)
+![alt text](https://i.imgur.com/jhBy5ax.png)
 
 # Contacts / Bug Reports:
 
@@ -26,11 +29,11 @@ This addon is currently in WIP status, new features and games will be added to t
 
 Before reporting an issue please check this out:
 
-1. Please take note that at the present time only single models or archives are supported. if you want to load models conposed by multiple files, you need to import them without ticking the `Clean scene box`.
-   We also suggest using F3 shortcut to bring up a  `recent commands` menu in Blender, by searching for `bin`, will bring NaomiLib name and import screen immediately.
-2. RGB / Transparency / Reflectiveness is not imported yet.
-3. You cannot export models in NL format.
-4. We do not distribute any game model / textures. You will have to legally dump your own games and extract files from it. Specific extractors are provided on a dedicate [Game Extraction Tools](https://github.com/NaomiMod/games-ExtractTools) section.
+1. Please note, if you want to load all models in a folder remember to tick "Load Directory" option before import.
+2. Textures are loaded automatcally (.png/.tga), if they are placed in a `Textures` folder in the same directory where model is stored.
+3. If you want to swap a texture on a model, change TextureID in Naomi Parameters box.
+4. You cannot export models in NL format (yet).
+5. We do not distribute any game model / textures. You will have to legally dump your own games and extract files from it. Specific extractors are provided on a dedicate [Game Extraction Tools](https://github.com/NaomiMod/games-ExtractTools) section.
 If you want to help us out in finding new games supporting NL, find any bug or errors in loading models, please reach me out on Discord: **Vincent#5259
 
 # Disclaimer
@@ -99,8 +102,9 @@ Install the addon into Blender using the created zip package
 
 ## Supported Blender versions:
 
+- Blender 3.4.1
 - Blender 2.83 LTS
-- Blender 2.90
+
 
 ## Special Thanks to:
 
