@@ -794,6 +794,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     # reorganize vertices into one array
     mesh_vertices = list()
     mesh_uvs = list()
+    
     for mesh in meshes:
         points = list()
         textures = list()
@@ -816,7 +817,8 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                 elif orientation == 'Z_UP':
                     points.append(Vector((updatedPoint_X, updatedPoint_Z, updatedPoint_Y)))
                 else:
-                    print("Something wrong")
+                    print("Something wrong ... Applying X_UP ...")
+                    points.append(Vector((updatedPoint_Y, updatedPoint_X, updatedPoint_Z)))
 
             for texture in face['texture']:
                 textures.append(Vector(texture))
@@ -871,7 +873,7 @@ def redraw():
 
 
 def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, meshOffColors:list,vertexColors:list, mesh_headers: list,
-                 mesh_Centroid: list,parent_col: bpy.types.Collection, scale: float, p_filepath: str, debug=False):
+                 mesh_Centroid: list, d2b_orientation: str, parent_col: bpy.types.Collection, scale: float, p_filepath: str, debug=False):
 
     if debug: print("meshes:", len(meshes))
 
@@ -955,6 +957,16 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_object.naomi_param.centroid_z = mesh_Centroid[i][2]
         new_object.naomi_param.bound_radius = mesh_Centroid[i][3]
 
+        # centroid to object
+        # if d2b_orientation == 'X_UP':   # Y,X,Z
+        #     new_object.location = ( new_object.naomi_param.centroid_y, new_object.naomi_param.centroid_x, new_object.naomi_param.centroid_z )
+        # elif d2b_orientation == 'Y_UP': # X,Y,Z
+        #     new_object.location = ( new_object.naomi_param.centroid_x, new_object.naomi_param.centroid_y, new_object.naomi_param.centroid_z )
+        # elif d2b_orientation == 'Z_UP': # X,Z,Y
+        #     new_object.location = ( new_object.naomi_param.centroid_x, new_object.naomi_param.centroid_z, new_object.naomi_param.centroid_y )
+        # else:
+        #     print("Something wrong ... Applying X_UP ...")
+        #     new_object.location = ( new_object.naomi_param.centroid_y, new_object.naomi_param.centroid_x, new_object.naomi_param.centroid_z )
         mh_texID = mesh_headers[i][4]
         spec_int = mesh_headers[i][5]
 
@@ -1148,7 +1160,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         bpy.context.scene.collection.children.link(obj_col)
 
         return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, meshOffColors=mesh_offcolors,
-                            vertexColors=mesh_vertcol, mesh_headers=mesh_header_s,mesh_Centroid=m_centroid,
+                            vertexColors=mesh_vertcol, mesh_headers=mesh_header_s,mesh_Centroid=m_centroid, d2b_orientation=orientation,
                             parent_col=obj_col, scale=scaling, p_filepath=filepath,
                             debug=debug)
 
