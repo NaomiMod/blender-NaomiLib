@@ -3,7 +3,7 @@ bl_info = {
     "author" : "zocker_160, VincentNL, TVIndustries",
     "description" : "Addon for importing NaomiLib .bin/.raw files",
     "blender" : (3, 4, 1),
-    "version" : (0, 14, 2),
+    "version" : (0, 14, 4),
     "location" : "File > Import",
     "warning" : "",
     "category" : "Import",
