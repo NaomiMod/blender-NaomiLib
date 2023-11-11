@@ -3,7 +3,7 @@ bl_info = {
     "author" : "zocker_160, VincentNL, TVIndustries",
     "description" : "Addon for importing NaomiLib .bin/.raw files",
     "blender" : (3, 4, 1),
-    "version" : (0, 14, 3),
+    "version" : (0, 14, 2),
     "location" : "File > Import",
     "warning" : "",
     "category" : "Import",
@@ -255,7 +255,7 @@ def update_texture(self, context):
                     self.mh_texID = 0  # Set the value to 0 if it's negative
                     bpy.context.area.tag_redraw()
     else:
-        print("No active mesh object with materials found.")
+        if debug:print("No active mesh object with materials found.")
 
 
 
@@ -337,8 +337,8 @@ class Naomi_Param_Properties(bpy.types.PropertyGroup):
         name = "Color Type",
         items = [('0', "Packed Color",""),
                  ('1', "Floating Color",""),
-                 ('2', "Intesity Mode 1",""),
-                 ('3', "Intesity Mode 2",""),
+                 ('2', "Intensity Mode 1",""),
+                 ('3', "Intensity Mode 2",""),
         ],
     )
     textureUsage : bpy.props.EnumProperty(
