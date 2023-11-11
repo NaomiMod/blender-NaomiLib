@@ -20,6 +20,9 @@ magic_naomilib = [
     b'\x01\x00\x00\x00\x03\x00\x00\x00',  # Super index , always true , skip 1st light source
     b'\x01\x00\x00\x00\x05\x00\x00\x00',  # Super index , always true , Environment mapping
     b'\x00\x00\x00\x00\x05\x00\x00\x00',  # Pure Beta , always true , Environment mapping
+    b'\x00\x00\x00\x00\x07\x00\x00\x00',  # Pure Beta , always true , Environment mapping, skip 1st light source
+    b'\x01\x00\x00\x00\x07\x00\x00\x00',  # Super index , always true , Environment mapping, skip 1st light source
+
 ]
 
 magic_naomilib_big = [
@@ -270,7 +273,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                 f"bit4-5   | Color Type   :[{m_pflag_bit4_5}] {bit_par4_5[m_pflag_bit4_5]}\n"
                 f"bit6     | Use Volume   :[{m_pflag_bit6}] {bit_ny[m_pflag_bit6]}\n"
                 f"bit7     | Use Shadow   :[{m_pflag_bit7}] {bit_ny[m_pflag_bit7]}\n"
-                f"bit4-5   | List Type    :[{m_pflag_bit24_26}] {bit_par24_26[m_pflag_bit24_26]}\n"
+                f"bit24-26   | List Type    :[{m_pflag_bit24_26}] {bit_par24_26[m_pflag_bit24_26]}\n"
                 f"bit29-31 | Para Type    :[{m_pflag_bit29_31}] {bit_par29_31[m_pflag_bit29_31]}\n"
             )
 
@@ -641,6 +644,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     mesh_vertcol = list()
     m_headr_grps = list()
     m_centroid = list()
+    m_backface = list()
 
     nlfile.seek(0x64)  # size of mesh
     mesh_end_offset = read_uint32_buff() + 0x64
@@ -678,9 +682,14 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
         f = 0
         vertex_index_last = 0
         while nlfile.tell() < mesh_end_offset:
-            mult = False
-
+            all_triangles = False
             face_type = nlfile.read(0x4)  # some game internal value
+            culling = (((int.from_bytes(face_type, "little")) >> 0) & 3)
+
+            if debug:
+                culling_dbg = ["[0] no culling / unused", "[1] no culling /* double side */",
+                               "[2] backface   /* clock */", "[3] frontface  /* rclock */"]
+                print('mesh:', m, 'strip:', f, 'culling_value:', culling_dbg[culling])
 
             if debug:
                 print(face_type)
@@ -688,12 +697,12 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 
             if (((int.from_bytes(face_type,
                                  "little")) >> 3) & 1) == 1:  # check face type, if bit3 flag is set to 1, it's triangles!
-                mult = True
+                all_triangles = True
             else:
-                mult = False
+                all_triangles = False
 
             n_face = read_uint32_buff()  # number of faces for this chunk (depending on the type it needs either one or three vertices / face)
-            if mult:
+            if all_triangles:
                 n_vertex = n_face * 3
                 if debug: print("triple number of vertices")
             else:
@@ -748,13 +757,17 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                 'texture': texture_uv
             })
 
-            if mult:
+            if all_triangles:
                 for j in range(n_face):
                     i = vertex_index_last + j * 3
-
-                    x = i
-                    y = i + 1
-                    z = i + 2
+                    if culling == 0 or culling == 2:
+                        x = i + 1
+                        y = i
+                        z = i + 2
+                    else:
+                        x = i
+                        y = i + 1
+                        z = i + 2
 
                     faces_index.append([x, y, z])
                     strip_counter += 1
@@ -763,13 +776,24 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                     i = vertex_index_last + j
 
                     if (strip_counter % 2 == 1):
-                        x = i
-                        y = i + 1
-                        z = i + 2
+                        if culling == 0 or culling == 2:
+                            x = i + 1
+                            y = i
+                            z = i + 2
+                        else:
+                            x = i
+                            y = i + 1
+                            z = i + 2
+
                     else:
-                        x = i + 1
-                        y = i
-                        z = i + 2
+                        if culling == 0 or culling == 2:
+                            x = i
+                            y = i + 1
+                            z = i + 2
+                        else:
+                            x = i + 1
+                            y = i
+                            z = i + 2
 
                     faces_index.append([x, y, z])
                     strip_counter += 1
@@ -779,8 +803,17 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 
             if debug: print("-----")
 
+        if culling == 0 or culling == 1:
+            backface_flag = False
+            if debug:print('backface: disabled (double-side')
+        else:
+            backface_flag = True
+            if debug:print('backface: enabled(front or back)')
+
+
         # print(meshes[4]['vertex'][-1])
         if debug: print("number of faces found:", f)
+        m_backface.append(backface_flag)
 
         meshes.append({
             'face_vertex': faces_vertex,
@@ -794,7 +827,6 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     # reorganize vertices into one array
     mesh_vertices = list()
     mesh_uvs = list()
-    
     for mesh in meshes:
         points = list()
         textures = list()
@@ -817,8 +849,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                 elif orientation == 'Z_UP':
                     points.append(Vector((updatedPoint_X, updatedPoint_Z, updatedPoint_Y)))
                 else:
-                    print("Something wrong ... Applying X_UP ...")
-                    points.append(Vector((updatedPoint_Y, updatedPoint_X, updatedPoint_Z)))
+                    print("Something wrong")
 
             for texture in face['texture']:
                 textures.append(Vector(texture))
@@ -844,7 +875,8 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     # mesh_faces[mesh_index][face_index][0|1|2]
     ####
 
-    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors,mesh_offcolors,mesh_vertcol, m_headr_grps, gflag_headers,m_centroid
+
+    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors,mesh_offcolors,mesh_vertcol, m_headr_grps, gflag_headers,m_backface,m_centroid
 
 
 ########################
@@ -873,7 +905,7 @@ def redraw():
 
 
 def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, meshOffColors:list,vertexColors:list, mesh_headers: list,
-                 mesh_Centroid: list, d2b_orientation: str, parent_col: bpy.types.Collection, scale: float, p_filepath: str, debug=False):
+                 meshBackface: list,mesh_Centroid: list,parent_col: bpy.types.Collection, scale: float, p_filepath: str, debug=False):
 
     if debug: print("meshes:", len(meshes))
 
@@ -957,24 +989,11 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_object.naomi_param.centroid_z = mesh_Centroid[i][2]
         new_object.naomi_param.bound_radius = mesh_Centroid[i][3]
 
-        # centroid to object
-        # if d2b_orientation == 'X_UP':   # Y,X,Z
-        #     new_object.location = ( new_object.naomi_param.centroid_y, new_object.naomi_param.centroid_x, new_object.naomi_param.centroid_z )
-        # elif d2b_orientation == 'Y_UP': # X,Y,Z
-        #     new_object.location = ( new_object.naomi_param.centroid_x, new_object.naomi_param.centroid_y, new_object.naomi_param.centroid_z )
-        # elif d2b_orientation == 'Z_UP': # X,Z,Y
-        #     new_object.location = ( new_object.naomi_param.centroid_x, new_object.naomi_param.centroid_z, new_object.naomi_param.centroid_y )
-        # else:
-        #     print("Something wrong ... Applying X_UP ...")
-        #     new_object.location = ( new_object.naomi_param.centroid_y, new_object.naomi_param.centroid_x, new_object.naomi_param.centroid_z )
+
         mh_texID = mesh_headers[i][4]
         spec_int = mesh_headers[i][5]
-
-
-
-
-
-
+        FlipUV=mesh_headers[i][2][8]
+        Clamp=mesh_headers[i][2][9]
 
         # Convert specular intensity WIP
         if spec_int >-1:
@@ -989,23 +1008,34 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_mat = bpy.data.materials.new(f"object_{i}_mat")
         new_mat.diffuse_color = meshColors[i]
 
-
         # Ensure the material has a node tree
         if new_mat.use_nodes is False:
             new_mat.use_nodes = True
 
         material_node_tree = new_mat.node_tree
+
+        # Disable backface culling for double-sided mesh
+        new_mat.use_backface_culling = meshBackface[i]
+
         color_input = new_mat.node_tree.nodes.get('Principled BSDF').inputs['Base Color']
         alpha_input = new_mat.node_tree.nodes.get('Principled BSDF').inputs['Alpha']
         coloroff_input = new_mat.node_tree.nodes.get('Principled BSDF').inputs[
             'Subsurface Color']  # Mesh Offset Colors?
         specular_input = new_mat.node_tree.nodes.get('Principled BSDF').inputs[
             'Specular']  # Specular intensity?
-
         color_input.default_value = meshColors[i]
         alpha_input.default_value = meshColors[i][3]
         coloroff_input.default_value = meshOffColors[i]
         specular_input.default_value = 0.0
+        new_mat.node_tree.nodes.get('Principled BSDF').inputs[
+            'IOR'].default_value= 1.0
+
+        # Setup Alpha Blend of material
+        if mesh_headers[i][0][2]!= 2:
+            new_mat.blend_method = "OPAQUE"
+        else:
+            new_mat.blend_method = "BLEND"
+
         # Connect the texture node to the desired input node (e.g., Principled BSDF)
         input_node = material_node_tree.nodes.get('Principled BSDF')
 
@@ -1055,22 +1085,177 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
                     # Connect the texture node to the desired input node (Principled BSDF)
                     input_node = material_node_tree.nodes.get('Principled BSDF')
 
+                    # Prepare material to be transparent
+
+                    texture_node.image.alpha_mode = "CHANNEL_PACKED"
+
                     if new_object.naomi_tsp.alphaTexOp == '1':
-                        new_mat.blend_method = "OPAQUE"
                         texture_node.image.alpha_mode = "NONE"
 
                     else:
-                        new_mat.blend_method = "BLEND"
-                        texture_node.image.alpha_mode = "CHANNEL_PACKED"
-
                         material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
+
+                    # ----------------------
+                    # Texture Flip / Tiling
+                    #-----------------------
+                    # FlipUV = U/V Flip [0:No Flip,  1:Flip Y, 2:Flip X, 3:Flip XY)
+                    # Clamp = Clamp    [0:No Clamp, 1:X,      2:Y,      3:XY)
+
+                    if Clamp==0:
+                        texture_node.extension = "REPEAT"
+                    else:
+                        texture_node.extension = "EXTEND"
+
+
+                    if FlipUV==0 and Clamp==0: # NoFlip,NoClamp //Group 0
+                        pass
+
+                    elif Clamp==3:  # ClampXY //Group 8
+                        pass
+
+                    else:
+                        # Create a UV Map node
+                        uv_node = material_node_tree.nodes.new('ShaderNodeUVMap')
+
+                        # Create a Separate XYZ node
+                        separate_xyz_node = material_node_tree.nodes.new('ShaderNodeSeparateXYZ')
+
+                        # Link the UV output of the UV Map node to the Vector input of the Separate XYZ node
+                        material_node_tree.links.new(uv_node.outputs['UV'], separate_xyz_node.inputs['Vector'])
+
+                        # Create a Combine XYZ node
+                        combine_xyz_node = material_node_tree.nodes.new('ShaderNodeCombineXYZ')
+
+                        # Create a Math node
+                        math_node = material_node_tree.nodes.new('ShaderNodeMath')
+
+                        if FlipUV == 1 and Clamp == 0:  # FlipY, NoClamp // Group 1
+
+                            # Math node set to 'PingPong'
+                            math_node.operation = 'PINGPONG'
+
+                            # Link the Separate XYZ node outputs to the Combine XYZ node inputs
+                            material_node_tree.links.new(separate_xyz_node.outputs['X'], combine_xyz_node.inputs['X'])
+                            material_node_tree.links.new(separate_xyz_node.outputs['Y'], math_node.inputs[0])
+                            material_node_tree.links.new(math_node.outputs[0], combine_xyz_node.inputs['Y'])
+
+
+                        elif FlipUV == 2 and Clamp == 0:  # FlipX, NoClamp // Group 2
+
+                            # Math node set to 'PingPong'
+                            math_node.operation = 'PINGPONG'
+
+                            # Link the Separate XYZ node outputs to the Combine XYZ node inputs
+                            material_node_tree.links.new(separate_xyz_node.outputs['Y'], combine_xyz_node.inputs['Y'])
+                            material_node_tree.links.new(separate_xyz_node.outputs['X'], math_node.inputs[0])
+                            material_node_tree.links.new(math_node.outputs[0], combine_xyz_node.inputs['X'])
+
+
+                        elif FlipUV == 3 and Clamp == 0:  # FlipXY, NoClamp // Group 3
+
+                            # Math node set to 'PingPong'
+                            math_node.operation = 'PINGPONG'
+
+                            # Math node set to 'PingPong2'
+                            math_node2 = material_node_tree.nodes.new('ShaderNodeMath')
+                            math_node2.operation = 'PINGPONG'
+                            math_node2.inputs[1].default_value = 1.0
+
+                            # Link the Separate XYZ node outputs to the Combine XYZ node inputs
+                            material_node_tree.links.new(separate_xyz_node.outputs['Y'], math_node2.inputs[0])
+                            material_node_tree.links.new(separate_xyz_node.outputs['X'], math_node.inputs[0])
+                            material_node_tree.links.new(math_node2.outputs[0], combine_xyz_node.inputs['Y'])
+                            material_node_tree.links.new(math_node.outputs[0], combine_xyz_node.inputs['X'])
+
+                        elif (FlipUV == 0 and Clamp == 1) or (
+                                FlipUV == 1 and Clamp == 1):  # // NoFlip-FlipY ClampY Group 4
+
+                            # Math node set to 'WRAP'
+                            math_node.operation = 'WRAP'
+                            math_node.inputs[2].default_value = 0.0
+                            texture_node.interpolation = "Cubic"  # Get around Blender 3.4.1 bug "Linear+Wrap+Extend"
+
+                            # Link the Separate XYZ node outputs to the Combine XYZ node inputs
+                            material_node_tree.links.new(separate_xyz_node.outputs['Y'], combine_xyz_node.inputs['Y'])
+                            material_node_tree.links.new(separate_xyz_node.outputs['X'], math_node.inputs[0])
+                            material_node_tree.links.new(math_node.outputs[0], combine_xyz_node.inputs['X'])
+
+
+                        elif (FlipUV == 0 and Clamp == 2) or (
+                                FlipUV == 2 and Clamp == 2):  # // NoFlip-FlipX ClampX Group 5
+
+                            # Math node set to 'WRAP'
+                            math_node.operation = 'WRAP'
+                            math_node.inputs[2].default_value = 0.0
+                            texture_node.interpolation = "Cubic" # Get around Blender 3.4.1 bug "Linear+Wrap+Extend"
+
+                            # Link the Separate XYZ node outputs to the Combine XYZ node inputs
+                            material_node_tree.links.new(separate_xyz_node.outputs['X'], combine_xyz_node.inputs['X'])
+                            material_node_tree.links.new(separate_xyz_node.outputs['Y'], math_node.inputs[0])
+                            material_node_tree.links.new(math_node.outputs[0], combine_xyz_node.inputs['Y'])
+
+
+                        elif (FlipUV == 1 and Clamp == 2) or (
+                                FlipUV == 3 and Clamp == 2):  # // FlipY-FlipXY ClampX Group 6
+
+                            # Math node set to 'PINGPONG'
+                            math_node.operation = 'PINGPONG'
+
+                            # Link the Separate XYZ node outputs to the Combine XYZ node inputs
+                            material_node_tree.links.new(separate_xyz_node.outputs['X'], combine_xyz_node.inputs['X'])
+                            material_node_tree.links.new(separate_xyz_node.outputs['Y'], math_node.inputs[0])
+                            material_node_tree.links.new(math_node.outputs[0], combine_xyz_node.inputs['Y'])
+
+
+                        elif (FlipUV == 2 and Clamp == 1) or (
+                                FlipUV == 3 and Clamp == 1):  # // FlipX-FlipXY ClampY Group 7
+
+                            # Math node set to 'PINGPONG'
+                            math_node.operation = 'PINGPONG'
+
+
+                            # Link the Separate XYZ node outputs to the Combine XYZ node inputs
+                            material_node_tree.links.new(separate_xyz_node.outputs['Y'], combine_xyz_node.inputs['Y'])
+                            material_node_tree.links.new(separate_xyz_node.outputs['X'], math_node.inputs[0])
+                            material_node_tree.links.new(math_node.outputs[0], combine_xyz_node.inputs['X'])
+
+                        math_node.inputs[1].default_value = 1.0
+                        material_node_tree.links.new(combine_xyz_node.outputs['Vector'],texture_node.inputs['Vector'])
+
+
+
 
                     # If Vertex Colors
                     if mesh_headers[i][5] == -3:
 
                         # Create a Mix Color node
                         mix_color_node = material_node_tree.nodes.new('ShaderNodeMixRGB')
-                        mix_color_node.blend_type = 'MIX'
+
+                        if mesh_headers[i][2][1] == 1 or (mesh_headers[i][2][0]== 1 and mesh_headers[i][2][1] == 4):# DST ALPHA = 1 or SRCA = 1 and DSTA = SA
+                            mix_color_node.blend_type = 'LINEAR_LIGHT'
+                            mix_color_node.use_clamp = True
+
+                            # Create a Shader Node for Transparent BSDF
+                            DST_Alpha_node = material_node_tree.nodes.new('ShaderNodeBsdfTransparent')
+                            DST_Alpha_node.inputs['Color'].default_value = (1.0, 1.0, 1.0, 1.0)
+
+                            # Create a Shader Add node
+                            shader_add_node = material_node_tree.nodes.new('ShaderNodeAddShader')
+
+                            # Connect Transparent BSDF to Shader Add node
+                            material_node_tree.links.new(DST_Alpha_node.outputs['BSDF'], shader_add_node.inputs[0])
+
+                            # Connect Principled BSFD node to Shader Add node
+                            material_node_tree.links.new(input_node.outputs['BSDF'], shader_add_node.inputs[1])
+
+                            # Connect Shader Add node to Surface Material Output
+                            material_node_tree.links.new(shader_add_node.outputs['Shader'],
+                                                         material_node_tree.nodes['Material Output'].inputs['Surface'])
+
+                        else:
+                            mix_color_node.blend_type = 'MULTIPLY'
+
+
                         mix_color_node.inputs[0].default_value = 1.0
                         mix_color_node.use_alpha = False
 
@@ -1084,7 +1269,31 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
                         material_node_tree.links.new(mix_color_node.outputs['Color'], input_node.inputs['Base Color'])
 
                     else:
-                        material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
+
+                        # No Vertex Colors but special blending
+                        if mesh_headers[i][2][1] == 1 or (mesh_headers[i][2][0]== 1 and mesh_headers[i][2][1] == 4):  # DST ALPHA = 1 or SRCA = 1 and DSTA = SA
+
+                            # Create a Shader Node for Transparent BSDF
+                            DST_Alpha_node = material_node_tree.nodes.new('ShaderNodeBsdfTransparent')
+                            DST_Alpha_node.inputs['Color'].default_value = (1.0, 1.0, 1.0, 1.0)
+
+                            # Create a Shader Add node
+                            shader_add_node = material_node_tree.nodes.new('ShaderNodeAddShader')
+
+                            # Connect Transparent BSDF to Shader Add node
+                            material_node_tree.links.new(DST_Alpha_node.outputs['BSDF'], shader_add_node.inputs[0])
+
+                            # Connect Principled BSFD node to Shader Add node
+                            material_node_tree.links.new(input_node.outputs['BSDF'], shader_add_node.inputs[1])
+
+                            # Connect Shader Add node to Surface Material Output
+                            material_node_tree.links.new(shader_add_node.outputs['Shader'],
+                                                         material_node_tree.nodes['Material Output'].inputs['Surface'])
+
+                            material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
+
+                        else:
+                            material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
 
                     break
 
@@ -1101,6 +1310,14 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
             # If Vertex Colors
             if mesh_headers[i][5] == -3:
                 material_node_tree.links.new(vertex_color_node.outputs['Color'], input_node.inputs['Base Color'])
+
+        # If Constant mode (Flat shading)
+        if mesh_headers[i][5] == -1:
+            # Transmission intensity i.e. for light sources
+            new_mat.node_tree.nodes.get('Principled BSDF').inputs[
+                'Transmission'].default_value = 1.0
+            new_mat.node_tree.nodes.get('Principled BSDF').inputs[
+                'Transmission Roughness'].default_value = 1.0
 
 
         new_mat.roughness = spec_val
@@ -1135,7 +1352,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         if debug:
             model_log = ''
 
-        mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors, mesh_vertcol, mesh_header_s, g_headers,m_centroid= parse_nl(
+        mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors, mesh_vertcol, mesh_header_s, g_headers,m_backface,m_centroid= parse_nl(
             NL, orientation, NegScale_X,
             debug=debug)
         if debug:
@@ -1160,7 +1377,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         bpy.context.scene.collection.children.link(obj_col)
 
         return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, meshOffColors=mesh_offcolors,
-                            vertexColors=mesh_vertcol, mesh_headers=mesh_header_s,mesh_Centroid=m_centroid, d2b_orientation=orientation,
+                            vertexColors=mesh_vertcol, mesh_headers=mesh_header_s,meshBackface=m_backface,mesh_Centroid=m_centroid,
                             parent_col=obj_col, scale=scaling, p_filepath=filepath,
                             debug=debug)
 
@@ -1203,14 +1420,14 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
             f.seek(start_offset)
             if debug: print("NEW child start offset:", start_offset)
             if debug: print("NEW child end offset:", end_offset)
-            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors,mesh_vertcol,mesh_header_s,m_centroid = parse_nl(
+            mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors,mesh_vertcol,mesh_header_s,m_backface,m_centroid = parse_nl(
                 f.read(end_offset - start_offset), debug=debug)
 
             sub_col = bpy.data.collections.new(f"child_{i}")
             obj_col.children.link(sub_col)
 
             if not data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors,meshOffColors=mesh_offcolors,vertexColors=mesh_vertcol,
-                                mesh_headers=mesh_header_s,mesh_Centroid=m_centroid, parent_col=sub_col,
+                                mesh_headers=mesh_header_s,meshBackface=m_backface,mesh_Centroid=m_centroid, parent_col=sub_col,
                                 scale=scaling, p_filepath=filepath, debug=debug): return False
             f.seek(st_p)
             start_offset = end_offset
