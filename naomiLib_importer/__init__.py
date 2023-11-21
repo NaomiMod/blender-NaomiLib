@@ -2,8 +2,8 @@ bl_info = {
     "name" : "NaomiLib Importer for Blender",
     "author" : "zocker_160, VincentNL, TVIndustries",
     "description" : "Addon for importing NaomiLib .bin/.raw files",
-    "blender" : (3, 4, 1),
-    "version" : (0, 14, 4),
+    "blender" : (3, 6, 5),
+    "version" : (0, 14, 5),
     "location" : "File > Import",
     "warning" : "",
     "category" : "Import",
@@ -126,8 +126,8 @@ class Naomi_GlobalParam_0(bpy.types.PropertyGroup):
     )
 class Naomi_GlobalParam_1(bpy.types.PropertyGroup):
     skp1stSrcOp : bpy.props.BoolProperty(
-        description= "Skip 1st legitimate source option",
-        name = "Skip 1st Lgt Src Op",
+        description= "Skip the first light source calculation",
+        name = "Skip 1st Light Source",
     )
     envMap : bpy.props.BoolProperty(
         description= "Apply Environment Mapping",
@@ -135,11 +135,11 @@ class Naomi_GlobalParam_1(bpy.types.PropertyGroup):
     )
     pltTex : bpy.props.BoolProperty(
         description= "Palette is used on texture",
-        name = "Paletted Texture",
+        name = "Palette Texture",
     )
     bumpMap : bpy.props.BoolProperty(
         description= "BumpMap is used/available",
-        name = "Bump Map Available",
+        name = "Bump Map",
     )
 class COL_PT_collection_gps(bpy.types.Panel):
     _context_path = "collection"
@@ -180,7 +180,7 @@ def update_mesh_color(self, context):
         if active_object.material_slots:
             material = active_object.material_slots[0].material
             if material.use_nodes and material.node_tree:
-                # Find the Principled BSDF shader node
+                # Find the Specular BSDF shader node
                 principled_node = None
                 for node in material.node_tree.nodes:
                     if node.type == 'BSDF_PRINCIPLED':
@@ -191,7 +191,7 @@ def update_mesh_color(self, context):
                     # Update the base color of the Principled BSDF shader
                     base_color = self.meshColor
                     principled_node.inputs['Base Color'].default_value = (
-                    *base_color[:3], base_color[3])  # Convert to tuple (R, G, B, A)
+                    base_color)  # Convert to tuple (R, G, B, A)
 
 def update_mesh_offsetcolor(self, context):
     active_object = bpy.context.active_object
@@ -210,8 +210,8 @@ def update_mesh_offsetcolor(self, context):
                 if principled_node:
                     # Update the base color of the Principled BSDF shader
                     base_color = self.meshOffsetColor
-                    principled_node.inputs['Subsurface Color'].default_value = (
-                    *base_color[:3], base_color[3])  # Convert to tuple (R, G, B, A)
+                    principled_node.inputs['Specular Tint'].default_value = (
+                    base_color)  # Convert to tuple (R, G, B, A)
 
 
 def update_texture(self, context):
@@ -255,7 +255,8 @@ def update_texture(self, context):
                     self.mh_texID = 0  # Set the value to 0 if it's negative
                     bpy.context.area.tag_redraw()
     else:
-        if debug:print("No active mesh object with materials found.")
+        pass
+        #if debug:print("No active mesh object with materials found.")
 
 
 
