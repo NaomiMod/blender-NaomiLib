@@ -1066,12 +1066,13 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         specular_input.default_value = (255,255, 255, 255)
         new_mat.node_tree.nodes.get('Principled BSDF').inputs[
             'IOR'].default_value= 1.0
+        texture_node = None
 
         # Setup Alpha Blend of material
-        if mesh_headers[i][0][2]!= 2:
-            new_mat.blend_method = "OPAQUE"
-        else:
+        if mesh_headers[i][0][2] in (2,4):
             new_mat.blend_method = "BLEND"
+        else:
+            new_mat.blend_method = "OPAQUE"
 
         # Connect the texture node to the desired input node (e.g., Principled BSDF)
         input_node = material_node_tree.nodes.get('Principled BSDF')
@@ -1105,7 +1106,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
             lengthFilename = len(filename)
             texDir = p_filepath[:-lengthFilename] + 'Textures\\'
             texPath = texDir + texFilenameExt
-            textureFileFormats = ('png', 'tga')
+            textureFileFormats = ('png', 'bmp')
 
             # Check if texture file uses one of the specified formats:
             for format in textureFileFormats:
@@ -1334,6 +1335,11 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
                         # Connect the Mix Color's Result output node to Principled BSDF Base Color input node
                         material_node_tree.links.new(mix_color_node.outputs['Color'], input_node.inputs['Base Color'])
 
+                    elif mesh_headers[i][5] == -1:# If Constant mode (Flat shading)
+                        # Transmission intensity i.e. for light sources
+                        material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Emission Color'])
+                        new_mat.node_tree.nodes.get('Principled BSDF').inputs[27].default_value = 1.0
+
                     else:
 
                         # No Vertex Colors but special blending
@@ -1366,12 +1372,6 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
 
                     break
 
-                # Texture file not found, but have Vertex Colors
-                else:
-
-                    if mesh_headers[i][5] == -3:
-                        material_node_tree.links.new(vertex_color_node.outputs['Color'],
-                                                     input_node.inputs['Base Color'])
 
         # No Texture
         elif mh_texID == -1:
@@ -1380,23 +1380,10 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
             if mesh_headers[i][5] == -3:
                 material_node_tree.links.new(vertex_color_node.outputs['Color'], input_node.inputs['Base Color'])
 
-        # If Constant mode (Flat shading)
-        if mesh_headers[i][5] == -1:
-            # Transmission intensity i.e. for light sources
-
-            if mh_texID == -1:
+            elif mesh_headers[i][5] == -1: # If Constant mode (Flat shading)
                 material_node_tree.links.new(input_node.outputs['BSDF'], input_node.inputs['Base Color'])
-            else:
-                material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Emission Color'])
-
-            # inputs[27]= Emission Strenght
-            new_mat.node_tree.nodes.get('Principled BSDF').inputs[27].default_value = 1.0
-
-
-
-
-
-
+                # inputs[27]= Emission Strenght
+                new_mat.node_tree.nodes.get('Principled BSDF').inputs[27].default_value = 1.0
 
 
         new_mat.roughness = spec_val
