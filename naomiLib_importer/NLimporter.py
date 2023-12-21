@@ -1,4 +1,5 @@
 import bpy
+from . import pvr2image
 
 from bpy.types import Operator
 from bpy.props import FloatVectorProperty
@@ -1067,10 +1068,13 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_mat.node_tree.nodes.get('Principled BSDF').inputs[
             'IOR'].default_value= 1.0
         texture_node = None
+        vertex_color_node = None
 
         # Setup Alpha Blend of material
         if mesh_headers[i][0][2] in (2,4):
-            new_mat.blend_method = "BLEND"
+            if mesh_headers[i][5] == -2: # Bump
+                new_mat.blend_method = "BLEND"
+            else: new_mat.blend_method = "CLIP"
         else:
             new_mat.blend_method = "OPAQUE"
 
@@ -1108,19 +1112,29 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
             texPath = texDir + texFilenameExt
             textureFileFormats = ('png', 'bmp')
 
+            if os.path.exists(texDir + texFileName + '.PVR'):
+                # Check if .bmp or .png files exist
+                if not os.path.exists(texDir + texFileName + '.png') and not os.path.exists(texDir + texFileName + '.bmp'):
+                     pvr2image.decode([texDir + texFileName + '.PVR'],'bmp',texDir,'')
+
             # Check if texture file uses one of the specified formats:
             for format in textureFileFormats:
                 potential_tex_path = texDir + texFileName + '.' + format
+
 
                 # If Texture file exists
                 if os.path.exists(potential_tex_path):
                     texPath = potential_tex_path
                     new_texture = bpy.data.images.load(texPath)
 
+                    # --------
+                    # Texture
+                    # --------
+
+                    if i not in mesh_Env:
+                        texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
                     # Env mapping
-                    if i in mesh_Env:
-                        texture_node = material_node_tree.nodes.new('ShaderNodeTexEnvironment')
-                    else: texture_node = material_node_tree.nodes.new('ShaderNodeTexImage')
+                    else: texture_node = material_node_tree.nodes.new('ShaderNodeTexEnvironment')
 
                     texture_node.image = new_texture
 
@@ -1136,29 +1150,9 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
                     else:
                         material_node_tree.links.new(texture_node.outputs['Alpha'], input_node.inputs['Alpha'])
 
-                    # Bump mapping
-                    if mesh_headers[i][5] == -2:
-                        # Create a new Normal Map node
-                        normal_map_node = material_node_tree.nodes.new('ShaderNodeNormalMap')
-                        shader_to_rgb_node = material_node_tree.nodes.new('ShaderNodeShaderToRGB')
-                        transparent_node = material_node_tree.nodes.new('ShaderNodeBsdfTransparent')
-
-                        material_node_tree.links.new(texture_node.outputs['Color'], normal_map_node.inputs['Color'])
-                        # Strenght to 2.0
-                        normal_map_node.inputs[0].default_value = 2.0
-                        material_node_tree.links.new(normal_map_node.outputs['Normal'], input_node.inputs['Normal'])
-                        material_node_tree.links.new(input_node.outputs['BSDF'], shader_to_rgb_node.inputs[0])
-                        material_node_tree.links.new(shader_to_rgb_node.outputs['Color'], transparent_node.inputs['Color'])
-                        material_node_tree.links.new(transparent_node.outputs[0],
-                                                     material_node_tree.nodes['Material Output'].inputs['Surface'])
-                        # To compensate for luminosity decrease
-                        new_mat.node_tree.nodes.get('Principled BSDF').inputs[27].default_value = 0.2
-                        # Normal map as non-color data
-                        texture_node.image.colorspace_settings.name = 'Non-Color'
-
 
                     # Env map texture node does not support extend method
-                    elif i not in mesh_Env:
+                    if i not in mesh_Env:
                         # ----------------------
                         # Texture Flip / Tiling
                         # -----------------------
@@ -1336,8 +1330,10 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
                         material_node_tree.links.new(mix_color_node.outputs['Color'], input_node.inputs['Base Color'])
 
                     elif mesh_headers[i][5] == -1:# If Constant mode (Flat shading)
+
                         # Transmission intensity i.e. for light sources
                         material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Emission Color'])
+                        material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
                         new_mat.node_tree.nodes.get('Principled BSDF').inputs[27].default_value = 1.0
 
                     else:
@@ -1364,16 +1360,30 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
 
                             material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
 
+
                         elif mesh_headers[i][5] == -2:
-                            pass
+                            normal_map_node = material_node_tree.nodes.new('ShaderNodeNormalMap')
+                            shader_to_rgb_node = material_node_tree.nodes.new('ShaderNodeShaderToRGB')
+                            transparent_node = material_node_tree.nodes.new('ShaderNodeBsdfTransparent')
+
+                            material_node_tree.links.new(texture_node.outputs['Color'], normal_map_node.inputs['Color'])
+                            # Strenght to 2.0
+                            normal_map_node.inputs[0].default_value = 2.0
+                            material_node_tree.links.new(normal_map_node.outputs['Normal'], input_node.inputs['Normal'])
+                            material_node_tree.links.new(input_node.outputs['BSDF'], shader_to_rgb_node.inputs[0])
+                            material_node_tree.links.new(shader_to_rgb_node.outputs['Color'],transparent_node.inputs['Color'])
+                            material_node_tree.links.new(transparent_node.outputs[0],material_node_tree.nodes['Material Output'].inputs['Surface'])
+                            # To compensate for luminosity decrease
+                            new_mat.node_tree.nodes.get('Principled BSDF').inputs[27].default_value = 0.2
+                            # Normal map as non-color data
+                            texture_node.image.colorspace_settings.name = 'Non-Color'
 
                         else:
                             material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
 
-                    break
-
-
+        # ----------
         # No Texture
+        # ----------
         elif mh_texID == -1:
 
             # If Vertex Colors
@@ -1384,6 +1394,9 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
                 material_node_tree.links.new(input_node.outputs['BSDF'], input_node.inputs['Base Color'])
                 # inputs[27]= Emission Strenght
                 new_mat.node_tree.nodes.get('Principled BSDF').inputs[27].default_value = 1.0
+
+            else:
+                material_node_tree.links.new(input_node.outputs['BSDF'], input_node.inputs['Base Color'])
 
 
         new_mat.roughness = spec_val
