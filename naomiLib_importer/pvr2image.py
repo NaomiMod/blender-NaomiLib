@@ -1,7 +1,7 @@
 '''
 MIT License
 
-Copyright (c) 2023 VincentNL
+Copyright (c) 2024 VincentNL
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,19 +24,85 @@ SOFTWARE.
 
 import os
 import math
+import io
 import struct
 import numpy as np
 import zlib
 
 class decode:
 
-    debug=False
-
-    def __init__(self, files_lst,fmt,out_dir, flip):
+    def __init__(self, files_lst=None, fmt=None, out_dir=None, args_str=None):
         self.files_lst = files_lst
         self.out_dir = out_dir
         self.fmt = fmt
-        self.flip = flip
+        self.flip = ""  # Default value for flip
+        self.log = False  # Default value for log flag
+        self.silent = False  # Default value for silent flag
+        self.debug = False  # Default value for debug flag
+
+        if len(files_lst)==0 or files_lst == '':
+            print('No file specified!')
+            return
+
+        if fmt is None:
+            self.fmt = "png"
+
+        if out_dir is None:
+            self.out_dir = os.path.abspath(os.path.dirname(files_lst[0]))
+        else:
+            self.out_dir = out_dir
+
+        # Determine out_dir
+        if args_str:
+            args = args_str.split()  # Split the string into individual arguments
+
+            # Iterate through the arguments to find flip, log, and debug options
+            for arg in args:
+                if arg.startswith('-flip'):
+                    # If -flip is found, extract the flip value
+                    self.flip = arg[len('-flip'):]
+                elif arg == '-log':
+                    self.log = True
+                elif arg == '-dbg':
+                    self.debug = True
+                elif arg == '-silent':
+                    self.silent = True
+
+
+        self.px_modes = {
+            0: 'ARGB1555',
+            1: 'RGB565',
+            2: 'ARGB4444',
+            3: 'YUV422',
+            4: 'BUMP',
+            5: 'RGB555',
+            6: 'YUV420',
+            7: 'ARGB8888',
+            8: 'PAL-4',
+            9: 'PAL-8',
+            10: 'AUTO',
+        }
+
+        self.tex_modes = {
+            1: 'Twiddled',
+            2: 'Twiddled + Mips',
+            3: 'Twiddled VQ',
+            4: 'Twiddled VQ + Mips',
+            5: 'Twiddled Pal4 (16-col)',
+            6: 'Twiddled Pal4 + Mips (16-col)',
+            7: 'Twiddled Pal8 (256-col)',
+            8: 'Twiddled Pal8 + Mips (256-col)',
+            9: 'Rectangle',
+            10: 'Rectangle + Mips',
+            11: 'Stride',
+            12: 'Stride + Mips',
+            13: 'Twiddled Rectangle',
+            14: 'BMP',
+            15: 'BMP + Mips',
+            16: 'Twiddled SmallVQ',
+            17: 'Twiddled SmallVQ + Mips',
+            18: 'Twiddled Alias + Mips',
+        }
 
         # remove companion .PVP/.PVR, filter the list
         new_list = []
@@ -51,6 +117,11 @@ class decode:
 
         # create Extracted\ACT folders
         if self.debug: print(out_dir + '\ACT')
+
+        # create log file
+        if self.log:
+            with open(f'{out_dir}/pvr_log.txt', 'w') as l:
+                l.write('')
 
         while current_file < selected_files:
             if not files_lst:  # If no files are selected
@@ -77,49 +148,48 @@ class decode:
 
             current_file += 1
 
-
     def read_col(self,px_format, color):
 
         if px_format == 0:  # ARGB1555
-            a = 0xff if ((color >> 15) & 1) else 0
-            r = (color >> (10 - 3)) & 0xf8
-            g = (color >> (5 - 3)) & 0xf8
-            b = (color << 3) & 0xf8
+            a = ((color >> 15) & 0x1) * 0xff
+            r = int(((color >> 10) & 0x1f) * 0xff / 0x1f)
+            g = int(((color >> 5) & 0x1f) * 0xff / 0x1f)
+            b = int((color & 0x1f) * 0xff / 0x1f)
             return (r, g, b, a)
 
         elif px_format == 1:  # RGB565
             a = 0xff
-            r = (color >> (11 - 3)) & (0x1f << 3)
-            g = (color >> (5 - 2)) & (0x3f << 2)
-            b = (color << 3) & (0x1f << 3)
+            r = int(((color >> 11) & 0x1f) * 0xff / 0x1f)
+            g = int(((color >> 5) & 0x3f) * 0xff / 0x3f)
+            b = int((color & 0x1f) * 0xff / 0x1f)
             return (r, g, b, a)
 
         elif px_format == 2:  # ARGB4444
-            a = (color >> (12 - 4)) & 0xf0
-            r = (color >> (8 - 4)) & 0xf0
-            g = (color >> (4 - 4)) & 0xf0
-            b = (color << 4) & 0xf0
+            a = ((color >> 12) & 0xf)*0x11
+            r = ((color >> 8) & 0xf)*0x11
+            g = ((color >> 4) & 0xf)*0x11
+            b = (color & 0xf)*0x11
             return (r, g, b, a)
 
         elif px_format == 5:  # RGB555
             a = 0xFF
-            r = (color >> (10 - 3)) & 0xf8
-            g = (color >> (5 - 3)) & 0xf8
-            b = (color << 3) & 0xf8
+            r = int(((color >> 10) & 0x1f) * 0xff / 0x1f)
+            g = int(((color >> 5) & 0x1f) * 0xff / 0x1f)
+            b = int((color & 0x1f) * 0xff / 0x1f)
             return (r, g, b, a)
 
         elif px_format in [7]:  # ARGB8888
             a = (color >> 24) & 0xFF
             r = (color >> 16) & 0xFF
             g = (color >> 8) & 0xFF
-            b = (color >> 0) & 0xFF
+            b = color & 0xFF
             return (r, g, b, a)
 
         elif px_format in [14]:  # RGBA8888
             r = (color >> 24) & 0xFF
             g = (color >> 16) & 0xFF
             b = (color >> 8) & 0xFF
-            a = (color >> 0) & 0xFF
+            a = color & 0xFF
             return (r, g, b, a)
 
         elif px_format == 3:
@@ -217,10 +287,10 @@ class decode:
         else:
             pixels_len = 1
 
-        if 'v' in self.flip:
+        if self.flip and'v' in self.flip:
             data = (np.flipud((np.array(data)).reshape(h, w, -1)).flatten()).reshape(-1, pixels_len).tolist()
 
-        if 'h' in self.flip:
+        if self.flip and 'h' in self.flip:
             data = (np.fliplr((np.array(data)).reshape(h, w, -1)).flatten()).reshape(-1, pixels_len).tolist()
 
         return data
@@ -237,7 +307,29 @@ class decode:
         elif self.fmt == 'tga':
             self.save_tga(file_name,data,bits,w,h,cmode,palette )
 
-        print(fr"{self.out_dir}\{file_name[:-4]}.{self.fmt}")
+        if not self.silent:print(fr"{self.out_dir}\{file_name[:-4]}.{self.fmt}")
+
+    # Incomplete! Not supporting palettized images!
+    def save_tga(self, file_name,data,bits,w,h,cmode,palette=None):
+        # Define TGA header
+        tga_header = bytearray([0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, w & 255, (w >> 8) & 255,
+                                h & 255, (h >> 8) & 255, 32, 0])
+
+        # TGA is not reversed by default
+        pixel_data = bytearray()
+
+        # Iterate over the flattened array and append the pixel data
+        for pixel in data:
+            # Assuming pixel is in BGRA format
+            pixel_data.extend([pixel[2], pixel[1], pixel[0], pixel[3]])
+
+        # Combine the header and pixel data
+        tga_data = tga_header + pixel_data
+
+        # Save the TGA file
+        with open(fr'{self.out_dir}\{file_name[:-4]}.tga', "wb") as tga_file:
+            tga_file.write(tga_data)
+
 
     def save_bmp(self, file_name, data, bits, w, h, cmode, palette=None):
         # Define BMP file header
@@ -328,8 +420,7 @@ class decode:
             ret = []
 
             for row in image_data:
-                ret.append(0)  # Filter type None for non-indexed color
-                ret.extend(pixel for color in row for pixel in color)
+                ret.extend([0] + [pixel for color in row for pixel in color])
 
             return ret
 
@@ -386,7 +477,7 @@ class decode:
 
 
         # Compress image data using zlib with compression level 0
-        compressed_data = zlib.compress(image_data)
+        compressed_data = zlib.compress(image_data,level=1)
 
         # Write PNG signature
         signature = b'\x89PNG\r\n\x1a\n'
@@ -820,64 +911,56 @@ class decode:
             # save the image
             self.save_image(file_name,data,8,w,h,cmode,palette)
 
-    def load_pvr(self,PVR_file, apply_palette, act_buffer, file_name):
-        if self.debug: px_modes = {
-            0: 'ARGB1555',
-            1: 'RGB565',
-            2: 'ARGB4444',
-            3: 'YUV422',
-            4: 'BUMP',
-            5: 'RGB555',
-            6: 'YUV420',
-            7: 'ARGB8888',
-            8: 'PAL-4',
-            9: 'PAL-8',
-            10: 'AUTO',
-        }
-        # Tex format
-        if self.debug: tex_modes = {
-            1: 'Twiddled',
-            2: 'Twiddled Mips',
-            3: 'Twiddled VQ',
-            4: 'Twiddled VQ Mips',
-            5: 'Twiddled Pal4 (16-col)',
-            6: 'Twiddled Pal4 + Mips (16-col)',
-            7: 'Twiddled Pal8 (256-col)',
-            8: 'Twiddled Pal8 + Mips (256-col)',
-            9: 'Rectangle',
-            10: 'Rectangle + Mips',
-            11: 'Stride',
-            12: 'Stride + Mips',
-            13: 'Twiddled Rectangle',
-            14: 'BMP',
-            15: 'BMP + Mips',
-            16: 'Twiddled SmallVQ',
-            17: 'Twiddled SmallVQ + Mips',
-            18: 'Twiddled Alias + Mips',
-        }
+    def load_pvr(self, PVR_file, apply_palette, act_buffer, file_name):
+        px_modes = self.px_modes
+        tex_modes = self.tex_modes
+
         with open(PVR_file, 'rb') as f:
-            header_data = f.read()
+            # Wrap file content in a BytesIO object
+            f_buffer = io.BytesIO(f.read())
+
+            header_data = f_buffer.getvalue()
+            gbix_offset = header_data.find(b"GBIX")
+
+            if gbix_offset != -1:
+                f_buffer.seek(gbix_offset + 0x4)
+                gbix_size = int.from_bytes(f_buffer.read(4), byteorder='little')
+                if gbix_size == 0x8:
+                    gbix_val1 = int.from_bytes(f_buffer.read(4), byteorder='little')
+                    gbix_val2 = int.from_bytes(f_buffer.read(4), byteorder='little')
+                    if self.debug:
+                        print(hex(gbix_val1), hex(gbix_val2))
+                elif gbix_size == 0x4:
+                    gbix_val1 = int.from_bytes(f_buffer.read(4), byteorder='little')
+                    gbix_val2 = ''
+                else:
+                    print('invalid or unsupported GBIX size:', gbix_size, file_name)
+            else:
+                if self.debug:
+                    print('GBIX found at:', hex(gbix_offset))
+                gbix_val1 = ''
+                gbix_val2 = ''
+
             offset = header_data.find(b"PVRT")
             if offset != -1 or len(header_data) < 0x10:
-                f.seek(offset + 0x8)
+                f_buffer.seek(offset + 0x8)
 
                 # Pixel format
-                px_format = int.from_bytes(f.read(1), byteorder='little')
-                tex_format = int.from_bytes(f.read(1), byteorder='little')
+                px_format = int.from_bytes(f_buffer.read(1), byteorder='little')
+                tex_format = int.from_bytes(f_buffer.read(1), byteorder='little')
 
-                f.seek(f.tell() + 2)
+                f_buffer.seek(f_buffer.tell() + 2)
 
                 # Image size
-                w = int.from_bytes(f.read(2), byteorder='little')
-                h = int.from_bytes(f.read(2), byteorder='little')
-                offset = f.tell()
+                w = int.from_bytes(f_buffer.read(2), byteorder='little')
+                h = int.from_bytes(f_buffer.read(2), byteorder='little')
+                offset = f_buffer.tell()
 
-                if self.debug: print(PVR_file.split('/')[-1], 'size:', w, 'x', h, 'format:',
-                                     f'[{tex_format}] {tex_modes[tex_format]}', f'[{px_format}] {px_modes[px_format]}')
+                if self.debug:
+                    print(PVR_file.split('/')[-1], 'size:', w, 'x', h, 'format:',
+                          f'[{tex_format}] {tex_modes[tex_format]}', f'[{px_format}] {px_modes[px_format]}')
 
                 if tex_format in [2, 4, 6, 8, 10, 12, 15, 17, 18]:
-                    # print('mip-maps!')
-
                     if tex_format in [2, 6, 8, 10, 15, 18]:
                         # Mips skip
                         pvr_dim = [4, 8, 16, 32, 64, 128, 256, 512, 1024]
@@ -891,22 +974,24 @@ class decode:
                                 mip_index = i - 1
                                 break
 
-                        # Skip mips for image data offset
                         mip_sum = (sum(mip_size[:mip_index]) * size_adjust[tex_format]) + (extra_mip[tex_format])
 
                         offset += mip_sum
-                        # print(hex(offset))
 
-                self.decode_pvr(f, file_name, w, h, offset, px_format, tex_format, apply_palette, act_buffer)
+                self.decode_pvr(f_buffer, file_name, w, h, offset, px_format, tex_format, apply_palette, act_buffer)
 
+                if self.log:
+                    log_content = (
+                        f"Filename: {PVR_file}, size: {w}x{h}, format: {tex_modes[tex_format]}, "
+                        f"mode: {px_modes[px_format]}"
+                        f"{f', GBIX: {gbix_val1}' if gbix_val1 != '' else ', GBIX1: ---'}"
+                        f"{f', GBIX2: {gbix_val2}' if gbix_val2 != '' else ', GBIX2: ---'}\n"
+                    )
+
+                    with open(f'{self.out_dir}/pvr_log.txt', 'a') as l:
+                        l.write(log_content)
             else:
                 print("'PVRT' header not found!")
-
-        #try:
-
-
-        #except:
-        #    print(f'PVR data error! {PVR_file}')
 
     def load_pvp(self,PVP_file, act_buffer, file_name):
         try:
