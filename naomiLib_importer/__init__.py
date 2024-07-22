@@ -2,8 +2,8 @@ bl_info = {
     "name" : "NaomiLib Importer for Blender",
     "author" : "zocker_160, VincentNL, TVIndustries",
     "description" : "Addon for importing NaomiLib .bin/.raw files",
-    "blender" : (3, 6, 5),
-    "version" : (0, 14, 6),
+    "blender" : (4, 1, 1),
+    "version" : (0, 14, 9),
     "location" : "File > Import",
     "warning" : "",
     "category" : "Import",
@@ -29,7 +29,7 @@ def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fSca
     ret = False
 
     if bArchive:
-        ret = NLi.main_function_import_archive(self, filepath=filepath, scaling=fScaling, debug=bDebug)
+        ret = NLi.main_function_import_archive(self, filepath=filepath, scaling=fScaling, debug=bDebug, orientation=bOrientation, NegScale_X=bNegScale_X)
     else:
         ret = NLi.main_function_import_file(self, filepath=filepath, scaling=fScaling, debug=bDebug, orientation=bOrientation, NegScale_X=bNegScale_X)
 
@@ -221,7 +221,7 @@ def update_texture(self, context):
         texture_filepaths = set()  # Use a set for faster membership checking
 
         mh_texID = self.mh_texID
-        textureFileFormats = ('png', 'tga')
+        textureFileFormats = ('bmp', 'png')
 
         for material_slot in active_obj.material_slots:
             material = material_slot.material
@@ -230,7 +230,7 @@ def update_texture(self, context):
                     tex_node = node
                     image = tex_node.image
                     if image:
-                        texFileName = 'TexID_{0:03d}'.format(mh_texID)
+                        texFileName = f'TexID_{mh_texID:03d}'
                         texDir, filename = os.path.split(image.filepath)
                         texPath = os.path.join(texDir, texFileName)
 
