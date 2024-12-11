@@ -3,10 +3,10 @@ bl_info = {
     "author" : "zocker_160, VincentNL, TVIndustries",
     "description" : "Addon for importing NaomiLib .bin/.raw files",
     "blender" : (4, 1, 1),
-    "version" : (0, 14, 9),
+    "version" : (0, 15, 0),
     "location" : "File > Import",
     "warning" : "",
-    "category" : "Import",
+    "category": "Import-Export",
     "tracker_url": "https://github.com/NaomiMod/blender-NaomiLib"
 }
 
@@ -14,14 +14,17 @@ import bpy
 import importlib
 import os
 from . import NLimporter as NLi
+from . import NLexporter as NLe
 from bpy.props import FloatVectorProperty
 from bpy.props import StringProperty, BoolProperty, FloatProperty
 from bpy_extras.io_utils import ImportHelper, path_reference_mode
+from bpy_extras.io_utils import ExportHelper
 import tempfile
 import subprocess
 
 
 importlib.reload(NLi)
+importlib.reload(NLe)
 
 
 def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fScaling: float, bDebug: bool, bOrientation, bNegScale_X: bool):
@@ -125,6 +128,7 @@ class Naomi_GlobalParam_0(bpy.types.PropertyGroup):
         ],
     )
 class Naomi_GlobalParam_1(bpy.types.PropertyGroup):
+
     skp1stSrcOp : bpy.props.BoolProperty(
         description= "Skip the first light source calculation",
         name = "Skip 1st Light Source",
@@ -878,9 +882,41 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
 
 classes = [Naomi_GlobalParam_0, Naomi_GlobalParam_1, COL_PT_collection_gps, Naomi_Param_Properties, Naomi_ISP_TSP_Properties, Naomi_TSP_Properties, Naomi_TexCtrl_Properties, OBJECT_PT_Naomi_Properties]
 
-# Only needed if you want to add into a dynamic menu
+class ExportNaomiBin(bpy.types.Operator, ExportHelper):
+    """Export 3D models to NaomiLib .bin format"""
+    bl_idname = "export_scene.naomi_bin"
+    bl_label = "Export NaomiLib .bin"
+    filename_ext = ".bin"
+
+    def write_naomi_bin(self, filepath):
+        """Wrapper to call the function in NLexporter.py"""
+        try:
+            obj = bpy.context.object
+            if not obj:
+                self.report({'ERROR'}, "No active object selected.")
+                return {'CANCELLED'}
+
+            # Call the external function
+            NLe.write_naomi_bin(filepath, obj)
+            self.report({'INFO'}, f"Successfully exported to {filepath}")
+            return {'FINISHED'}
+
+        except Exception as e:
+            self.report({'ERROR'}, str(e))
+            return {'CANCELLED'}
+
+    def execute(self, context):
+        return self.write_naomi_bin(self.filepath)
+
+
+
+
 def menu_func_import(self, context):
     self.layout.operator(ImportNL.bl_idname, text="NaomiLib (.bin / .raw)") #.bin or raw supported by SMB
+
+def menu_func_export(self, context):
+    self.layout.operator(ExportNaomiBin.bl_idname, text="NaomiLib (.bin)")
+
 
 def register():
     bpy.utils.register_class(ImportNL)
@@ -895,6 +931,12 @@ def register():
     bpy.types.Collection.gp0 = bpy.props.PointerProperty(type= Naomi_GlobalParam_0)
     bpy.types.Collection.gp1 = bpy.props.PointerProperty(type= Naomi_GlobalParam_1)
 
+    # Exporter
+    bpy.utils.register_class(ExportNaomiBin)
+    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
+
+
+
 def unregister():
     bpy.utils.unregister_class(ImportNL)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
@@ -907,6 +949,10 @@ def unregister():
     del bpy.types.Object.naomi_texCtrl
     del bpy.types.Collection.gp0
     del bpy.types.Collection.gp1
+
+    # Exporter
+    bpy.utils.unregister_class(ExportNaomiBin)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
 
 if __name__ == "__main__":
     register()
