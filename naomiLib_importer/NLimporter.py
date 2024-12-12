@@ -1537,9 +1537,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         updatedPoint_X = obj_centroid_header[0]
         updatedPoint_Y = obj_centroid_header[1]
         updatedPoint_Z = obj_centroid_header[2]
-        if NegScale_X:
-            # Trying to apply neg X scale: [i]
-            updatedPoint_X = updatedPoint_X * -1.0
+
         
         if orientation == 'X_UP':
             # swap Y and X axis
@@ -1560,6 +1558,10 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         else:
             print("Something wrong")
         
+        if NegScale_X:
+            # Trying to apply neg X scale: [i]
+            obj_col.naomi_centroidData.centroid_x = obj_col.naomi_centroidData.centroid_x * -1.0
+
         obj_col.naomi_centroidData.collection_bound_radius = obj_centroid_header[3]
 
         bpy.context.scene.collection.children.link(obj_col)
