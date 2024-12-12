@@ -151,6 +151,13 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     obj_centr_z = read_float_buff()
     obj_bound_radius = read_float_buff()
 
+    obj_centroid_header = list()
+    obj_centroid_header.append(obj_centr_x)
+    obj_centroid_header.append(obj_centr_y)
+    obj_centroid_header.append(obj_centr_z)
+    obj_centroid_header.append(obj_bound_radius)
+
+
     if debug:
         model_log += (
             f"-----\n"
@@ -234,7 +241,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                 f"bit4-5   | Color Type   :[{m_pflag_bit4_5}] {bit_par4_5[m_pflag_bit4_5]}\n"
                 f"bit6     | Use Volume   :[{m_pflag_bit6}] {bit_ny[m_pflag_bit6]}\n"
                 f"bit7     | Use Shadow   :[{m_pflag_bit7}] {bit_ny[m_pflag_bit7]}\n"
-                f"bit24-26   | List Type    :[{m_pflag_bit24_26}] {bit_par24_26[m_pflag_bit24_26]}\n"
+                f"bit24-26 | List Type    :[{m_pflag_bit24_26}] {bit_par24_26[m_pflag_bit24_26]}\n"
                 f"bit29-31 | Para Type    :[{m_pflag_bit29_31}] {bit_par29_31[m_pflag_bit29_31]}\n"
             )
 
@@ -874,7 +881,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     ####
 
 
-    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors,mesh_offcolors,mesh_vertcol, m_headr_grps, gflag_headers,m_backface,m_env,m_centroid
+    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors,mesh_offcolors,mesh_vertcol, m_headr_grps, gflag_headers,obj_centroid_header,m_backface,m_env,m_centroid
 
 
 ########################
@@ -1503,7 +1510,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         if debug:
             model_log = ''
 
-        mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors, mesh_vertcol, mesh_header_s, g_headers,m_backface,m_env,m_centroid= parse_nl(
+        mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors, mesh_vertcol, mesh_header_s, g_headers,obj_centroid_header,m_backface,m_env,m_centroid= parse_nl(
             NL, orientation, NegScale_X,debug=debug)
         if debug:
             print(model_log)
@@ -1523,6 +1530,37 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         obj_col.gp1.envMap = g_headers[2]
         obj_col.gp1.pltTex = g_headers[3]
         obj_col.gp1.bumpMap = g_headers[4]
+
+        #centroid data obj
+
+        
+        updatedPoint_X = obj_centroid_header[0]
+        updatedPoint_Y = obj_centroid_header[1]
+        updatedPoint_Z = obj_centroid_header[2]
+        if NegScale_X:
+            # Trying to apply neg X scale: [i]
+            updatedPoint_X = updatedPoint_X * -1.0
+        
+        if orientation == 'X_UP':
+            # swap Y and X axis
+            obj_col.naomi_centroidData.centroid_x = updatedPoint_Y
+            obj_col.naomi_centroidData.centroid_y = updatedPoint_X
+            obj_col.naomi_centroidData.centroid_z = updatedPoint_Z
+    
+        elif orientation == 'Y_UP':
+            # no swap
+            obj_col.naomi_centroidData.centroid_x = updatedPoint_X
+            obj_col.naomi_centroidData.centroid_y = updatedPoint_Y
+            obj_col.naomi_centroidData.centroid_z = updatedPoint_Z
+        elif orientation == 'Z_UP':
+            # swap Y and Z
+            obj_col.naomi_centroidData.centroid_x = updatedPoint_X
+            obj_col.naomi_centroidData.centroid_y = updatedPoint_Z
+            obj_col.naomi_centroidData.centroid_z = updatedPoint_Y
+        else:
+            print("Something wrong")
+        
+        obj_col.naomi_centroidData.collection_bound_radius = obj_centroid_header[3]
 
         bpy.context.scene.collection.children.link(obj_col)
 

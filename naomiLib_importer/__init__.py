@@ -145,6 +145,29 @@ class Naomi_GlobalParam_1(bpy.types.PropertyGroup):
         description= "BumpMap is used/available",
         name = "Bump Map",
     )
+
+class Naomi_Centroid_Data(bpy.types.PropertyGroup):
+    # Add Centroid parameters
+    centroid_x: bpy.props.FloatProperty(
+        name="Centroid X",
+        default=0.0,
+    )
+
+    centroid_y: bpy.props.FloatProperty(
+        name="Centroid Y",
+        default=0.0,
+    )
+
+    centroid_z: bpy.props.FloatProperty(
+        name="Centroid Z",
+        default=0.0,
+    )
+    collection_bound_radius: bpy.props.FloatProperty(
+        name="Bound Radius",
+        default=1.0,
+        min=0.0,
+    )
+    
 class COL_PT_collection_gps(bpy.types.Panel):
     _context_path = "collection"
     _property_type = bpy.types.Collection
@@ -176,6 +199,29 @@ class COL_PT_collection_gps(bpy.types.Panel):
         row = box.row()
         row.prop(gp_1, "pltTex")
         row.prop(gp_1, "bumpMap")
+    
+        # Draw Centroid parameters
+        layout.label(text= "OBJ Centroid Data")
+        naomi_centroidData_p = active.naomi_centroidData
+        box = layout.box()
+
+        row = box.row()
+        row.label(text="Centroid X:")
+        row.prop(naomi_centroidData_p, "centroid_x", text="")
+
+        row = box.row()
+        row.label(text="Centroid Y:")
+        row.prop(naomi_centroidData_p, "centroid_y", text="")
+
+        row = box.row()
+        row.label(text="Centroid Z:")
+        row.prop(naomi_centroidData_p, "centroid_z", text="")
+
+        row = box.row()
+        row.label(text="Bound Radius:")
+        row.prop(naomi_centroidData_p, "collection_bound_radius", text="")
+
+
 
 def update_mesh_color(self, context):
     active_object = bpy.context.active_object
@@ -880,7 +926,7 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
         box.prop(naomi_tex_ctrl, "texCtrlUstride")
 
 
-classes = [Naomi_GlobalParam_0, Naomi_GlobalParam_1, COL_PT_collection_gps, Naomi_Param_Properties, Naomi_ISP_TSP_Properties, Naomi_TSP_Properties, Naomi_TexCtrl_Properties, OBJECT_PT_Naomi_Properties]
+classes = [Naomi_GlobalParam_0, Naomi_GlobalParam_1, Naomi_Centroid_Data, COL_PT_collection_gps, Naomi_Param_Properties, Naomi_ISP_TSP_Properties, Naomi_TSP_Properties, Naomi_TexCtrl_Properties, OBJECT_PT_Naomi_Properties]
 
 class ExportNaomiBin(bpy.types.Operator, ExportHelper):
     """Export 3D models to NaomiLib .bin format"""
@@ -930,7 +976,7 @@ def register():
     bpy.types.Object.naomi_texCtrl = bpy.props.PointerProperty(type= Naomi_TexCtrl_Properties)
     bpy.types.Collection.gp0 = bpy.props.PointerProperty(type= Naomi_GlobalParam_0)
     bpy.types.Collection.gp1 = bpy.props.PointerProperty(type= Naomi_GlobalParam_1)
-
+    bpy.types.Collection.naomi_centroidData = bpy.props.PointerProperty(type= Naomi_Centroid_Data)
     # Exporter
     bpy.utils.register_class(ExportNaomiBin)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
@@ -949,7 +995,7 @@ def unregister():
     del bpy.types.Object.naomi_texCtrl
     del bpy.types.Collection.gp0
     del bpy.types.Collection.gp1
-
+    del bpy.types.Collection.naomi_centroidData
     # Exporter
     bpy.utils.unregister_class(ExportNaomiBin)
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
