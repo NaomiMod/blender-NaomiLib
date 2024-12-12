@@ -839,22 +839,36 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
         for face in mesh['face_vertex']:
             for point in face['point']:
 
-                updatedPoint_Y = point[yVal]
-                updatedPoint_Z = point[zVal]
+                if orientation == 'X_UP':
+                    # points.append(Vector((updatedPoint_Y, updatedPoint_X, updatedPoint_Z)))
+                    # Swap X & Y
+                    updatedPoint_X = point[yVal]
+                    updatedPoint_Y = point[xVal]
+                    updatedPoint_Z = point[zVal]
+                elif orientation == 'Y_UP':
+                    # points.append(Vector((updatedPoint_X, updatedPoint_Y, updatedPoint_Z)))
+                    # No Swaps
+                    updatedPoint_X = point[xVal]
+                    updatedPoint_Y = point[yVal]
+                    updatedPoint_Z = point[zVal]
+                elif orientation == 'Z_UP':
+                    # points.append(Vector((updatedPoint_X, updatedPoint_Z, updatedPoint_Y)))
+                    # Swap Y & Z
+                    updatedPoint_X = point[xVal]
+                    updatedPoint_Y = point[zVal]
+                    updatedPoint_Z = point[yVal]
+                else:
+                    print("Something went wrong./n [!] Doing No Swaps!")
+                    # No Swaps
+                    updatedPoint_X = point[xVal]
+                    updatedPoint_Y = point[yVal]
+                    updatedPoint_Z = point[zVal]
+                
                 if NegScale_X:
                     # Trying to apply neg X scale: [i]
-                    updatedPoint_X = point[xVal] * -1.0
-                else:
-                    updatedPoint_X = point[xVal]
-                # swap Y and Z axis
-                if orientation == 'X_UP':
-                    points.append(Vector((updatedPoint_Y, updatedPoint_X, updatedPoint_Z)))
-                elif orientation == 'Y_UP':
-                    points.append(Vector((updatedPoint_X, updatedPoint_Y, updatedPoint_Z)))
-                elif orientation == 'Z_UP':
-                    points.append(Vector((updatedPoint_X, updatedPoint_Z, updatedPoint_Y)))
-                else:
-                    print("Something wrong")
+                    updatedPoint_X *= -1.0
+
+                points.append(Vector((updatedPoint_X, updatedPoint_Y, updatedPoint_Z)))
 
             for texture in face['texture']:
                 textures.append(Vector(texture))
@@ -1560,7 +1574,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         
         if NegScale_X:
             # Trying to apply neg X scale: [i]
-            obj_col.naomi_centroidData.centroid_x = obj_col.naomi_centroidData.centroid_x * -1.0
+            obj_col.naomi_centroidData.centroid_x *= -1.0
 
         obj_col.naomi_centroidData.collection_bound_radius = obj_centroid_header[3]
 
