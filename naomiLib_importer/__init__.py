@@ -14,9 +14,8 @@ import bpy
 import importlib
 import os
 from . import NLimporter as NLi
-from . import NLexporter as NLe
-from bpy.props import FloatVectorProperty
-from bpy.props import StringProperty, BoolProperty, FloatProperty
+# from . import NLexporter as NLe
+from bpy.props import StringProperty, BoolProperty, FloatProperty, FloatVectorProperty, PointerProperty
 from bpy_extras.io_utils import ImportHelper, path_reference_mode
 from bpy_extras.io_utils import ExportHelper
 import tempfile
@@ -24,7 +23,7 @@ import subprocess
 
 
 importlib.reload(NLi)
-importlib.reload(NLe)
+# importlib.reload(NLe)
 
 
 def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fScaling: float, bDebug: bool, bOrientation, bNegScale_X: bool):

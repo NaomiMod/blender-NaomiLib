@@ -1380,9 +1380,21 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
                             material_node_tree.links.new(texture_node.outputs['Color'],
                                                          input_node.inputs['Emission Color'])
                             material_node_tree.links.new(texture_node.outputs['Color'], input_node.inputs['Base Color'])
-                            new_mat.node_tree.nodes.get('Principled BSDF').inputs[27].default_value = 1.0
-                            new_mat.node_tree.nodes.get('Principled BSDF').inputs[2].default_value = 1.0 # Roughness
-                            new_mat.node_tree.nodes.get('Principled BSDF').inputs[17].default_value = 1.0  # Transmission Weight
+                            bsdf = new_mat.node_tree.nodes.get("Principled BSDF")
+                            if bsdf:
+                                # Set Sheen Tint (index 27 before, now accessed by name)
+                                bsdf.inputs['Sheen Tint'].default_value =  (1.0, 1.0, 1.0, 1.0)  # RGBA
+
+                                # Set Roughness (index 2)
+                                bsdf.inputs['Roughness'].default_value = 1.0
+
+                                # Set Transmission (index 17)
+                                if 'Transmission' in bsdf.inputs:
+                                    bsdf.inputs['Transmission'].default_value = 1.0
+                           
+                            # new_mat.node_tree.nodes.get('Principled BSDF').inputs[27].default_value = 1.0
+                            # new_mat.node_tree.nodes.get('Principled BSDF').inputs[2].default_value = 1.0 # Roughness
+                            # new_mat.node_tree.nodes.get('Principled BSDF').inputs[17].default_value = 1.0  # Transmission Weight
 
                             # No Vertex Colors but special blending
                             if tsp_dstAlpha == 1 or (
@@ -1552,7 +1564,8 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
         updatedPoint_Y = obj_centroid_header[1]
         updatedPoint_Z = obj_centroid_header[2]
 
-        
+        obj_col.naomi_centroidData.collection_bound_radius = obj_centroid_header[3]
+
         if orientation == 'X_UP':
             # swap Y and X axis
             obj_col.naomi_centroidData.centroid_x = updatedPoint_Y
@@ -1576,8 +1589,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
             # Trying to apply neg X scale: [i]
             obj_col.naomi_centroidData.centroid_x *= -1.0
 
-        obj_col.naomi_centroidData.collection_bound_radius = obj_centroid_header[3]
-
+        
         bpy.context.scene.collection.children.link(obj_col)
 
         return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, meshOffColors=mesh_offcolors,
