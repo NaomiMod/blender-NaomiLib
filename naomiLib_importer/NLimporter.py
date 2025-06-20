@@ -1488,14 +1488,17 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
 
                 # If Constant mode (Flat shading)
                 elif tex_shading == -1:
+                    bsdf = new_mat.node_tree.nodes.get('Principled BSDF')
+                    
                     # Set the Base Color
+                    
                     new_mat.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value = meshColors[i]  # Default color
-
-                    # Set the Emission Color to the same value as Base Color
-                    new_mat.node_tree.nodes.get('Principled BSDF').inputs[26].default_value = meshColors[i]
+                    if 'Emission' in bsdf.inputs:
+                        # Set the Emission Color to the same value as Base Color
+                        new_mat.node_tree.nodes.get('Principled BSDF').inputs['Emission'].default_value = meshColors[i]
 
                     # Set Emission Strength
-                    new_mat.node_tree.nodes.get('Principled BSDF').inputs[27].default_value = 1.0  # Emission Strength
+                    new_mat.node_tree.nodes.get('Principled BSDF').inputs['Emission Strength'].default_value = 1.0  # Emission Strength
                 else:
                     # Set the Base Color
                     new_mat.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value = meshColors[i]  # Default color
