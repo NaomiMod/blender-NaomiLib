@@ -4,10 +4,19 @@ from bpy.types import Operator
 from bpy.props import FloatVectorProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 import struct
+import hashlib
 import os
 from io import BytesIO
 from math import radians
 from mathutils import Vector
+import zlib
+
+def calculate_crc32(filepath):
+    crc = 0
+    with open(filepath, 'rb') as f:
+        for chunk in iter(lambda: f.read(8192), b''):
+            crc = zlib.crc32(chunk, crc)
+    return f"{crc & 0xffffffff:08x}"
 
 xVal = 0
 yVal = 1
@@ -524,7 +533,8 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
             print("\n" + "-----Mesh_Size-----" + "\n")
             print(f"Mesh Data Size: {hex(mesh_end_offset)}")
 
-        m_Headers = (l_Parameter_Header, l_ISP_TSP_Header, l_TSP_Header, l_texCtrl_Header, m_texID,m_tex_shading)
+        m_Headers = (
+        l_Parameter_Header, l_ISP_TSP_Header, l_TSP_Header, l_texCtrl_Header, m_texID, m_tex_shading, m_tex_amb)
         return m_Headers
 
     ##############################
@@ -895,7 +905,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
     ####
 
 
-    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors,mesh_offcolors,mesh_vertcol, m_headr_grps, gflag_headers,obj_centroid_header,m_backface,m_env,m_centroid
+    return mesh_vertices, mesh_uvs, mesh_faces, meshes, mesh_colors, mesh_offcolors, mesh_vertcol, m_headr_grps, gflag_headers, obj_centroid_header, m_backface, m_env, m_centroid
 
 
 ########################
@@ -903,33 +913,78 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 ########################
 
 def cleanup():
-    # Deselect all objects
-    bpy.ops.object.select_all(action='DESELECT')
+    """Clean up scene with proper error handling"""
+    try:
+        # Ensure we're in object mode first
+        if bpy.context.mode != 'OBJECT':
+            try:
+                bpy.ops.object.mode_set(mode='OBJECT')
+            except RuntimeError:
+                pass  # Ignore if no active object
 
-    # Delete all objects
-    bpy.ops.object.select_all(action='SELECT')
-    bpy.ops.object.delete(use_global=False)
+        # Deselect all objects (only if there are objects to deselect)
+        if bpy.context.scene.objects:
+            try:
+                bpy.ops.object.select_all(action='DESELECT')
+            except RuntimeError:
+                # Alternative method if select_all fails
+                for obj in bpy.context.scene.objects:
+                    obj.select_set(False)
+                bpy.context.view_layer.objects.active = None
 
-    # Remove all materials
-    for material in list(bpy.data.materials):
-        # If no users, remove the material
-        if material.users == 0:
+        # Select and delete all objects
+        if bpy.context.scene.objects:
+            try:
+                bpy.ops.object.select_all(action='SELECT')
+                bpy.ops.object.delete(use_global=False)
+            except RuntimeError:
+                # Alternative deletion method
+                objects_to_delete = list(bpy.context.scene.objects)
+                for obj in objects_to_delete:
+                    bpy.data.objects.remove(obj, do_unlink=True)
+
+    except Exception as e:
+        print(f"Error during object cleanup: {e}")
+
+    try:
+        # Remove all materials
+        materials_to_remove = [mat for mat in bpy.data.materials if mat.users == 0]
+        for material in materials_to_remove:
             bpy.data.materials.remove(material)
+    except Exception as e:
+        print(f"Error during material cleanup: {e}")
 
-    # Remove all collections
-    for collection in bpy.data.collections:
-        if len(collection.objects) == 0:
+    try:
+        # Remove all collections (check if they're empty first)
+        collections_to_remove = [col for col in bpy.data.collections if len(col.objects) == 0]
+        for collection in collections_to_remove:
             bpy.data.collections.remove(collection)
+    except Exception as e:
+        print(f"Error during collection cleanup: {e}")
 
-    # Remove unused meshes
-    for mesh in bpy.data.meshes:
-        if mesh.users == 0:
+    try:
+        # Remove unused meshes
+        meshes_to_remove = [mesh for mesh in bpy.data.meshes if mesh.users == 0]
+        for mesh in meshes_to_remove:
             bpy.data.meshes.remove(mesh)
+    except Exception as e:
+        print(f"Error during mesh cleanup: {e}")
 
-    # Remove unused images
-    for image in bpy.data.images:
-        if image.users == 0:
+    try:
+        # Remove unused images
+        images_to_remove = [image for image in bpy.data.images if image.users == 0]
+        for image in images_to_remove:
             bpy.data.images.remove(image)
+    except Exception as e:
+        print(f"Error during image cleanup: {e}")
+
+    # Final update
+    try:
+        bpy.context.view_layer.update()
+    except Exception as e:
+        print(f"Error during final update: {e}")
+
+    print("Scene cleanup completed")
 
 
 def redraw():
@@ -944,7 +999,7 @@ def find_existing_material(naomi_params_id):
     return None
 
 def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, meshOffColors:list,vertexColors:list, mesh_headers: list,
-                 meshBackface: list,mesh_Centroid: list,parent_col: bpy.types.Collection, scale: float, p_filepath: str, mesh_Env:list, debug=False):
+                 meshBackface: list,mesh_Centroid: list,parent_col: bpy.types.Collection, scale: float, p_filepath: str, mesh_Env:list, orientation, NegScale_X: bool, debug=False):
 
     if debug: print("meshes:", len(meshes))
 
@@ -980,11 +1035,22 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         # ---------------
         # Naomi Parameters
         # ----------------
-        # Mesh header bound radius
-        new_object.naomi_param.centroid_x = mesh_Centroid[i][0]
-        new_object.naomi_param.centroid_y = mesh_Centroid[i][1]
-        new_object.naomi_param.centroid_z = mesh_Centroid[i][2]
-        new_object.naomi_param.bound_radius = mesh_Centroid[i][3]
+
+        mesh_centr_x, mesh_centr_y, mesh_centr_z, mesh_bound_radius = mesh_Centroid[i]
+
+        if orientation == 'X_UP':
+            mesh_centr_x, mesh_centr_y, mesh_centr_z = mesh_centr_y, mesh_centr_x, mesh_centr_z
+        elif orientation == 'Z_UP':
+            mesh_centr_x, mesh_centr_y, mesh_centr_z = mesh_centr_x, mesh_centr_z, mesh_centr_y
+
+        if NegScale_X:
+            mesh_centr_x *= -1.0
+
+        new_object.naomi_param.centroid_x = mesh_centr_x
+        new_object.naomi_param.centroid_x = mesh_centr_x
+        new_object.naomi_param.centroid_y = mesh_centr_y
+        new_object.naomi_param.centroid_z = mesh_centr_z
+        new_object.naomi_param.bound_radius = mesh_bound_radius
 
         # Mesh header params
         new_object.naomi_param.paramType = str(mesh_headers[i][0][0])
@@ -1044,15 +1110,17 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_object.naomi_param.meshColor = meshColors[i]
         new_object.naomi_param.meshOffsetColor = meshOffColors[i]
         new_object.naomi_param.m_shad_type = '0' if mesh_headers[i][5] >= 0 else str(mesh_headers[i][5])
+        new_object.naomi_param.texture_ambient_light = mesh_headers[i][6]  # Add this line
 
         # Assign variables
         mh_texID = mesh_headers[i][4]
-        spec_int,tex_shading = mesh_headers[i][5],mesh_headers[i][5]
-        FlipUV=mesh_headers[i][2][8]
-        Clamp=mesh_headers[i][2][9]
+        spec_int, tex_shading = mesh_headers[i][5], mesh_headers[i][5]
+        m_tex_amb = mesh_headers[i][6]  # placeholder
+        FlipUV = mesh_headers[i][2][8]
+        Clamp = mesh_headers[i][2][9]
         tsp_dstAlpha = mesh_headers[i][2][1]
         tsp_srcAlpha = mesh_headers[i][2][0]
-        listType =mesh_headers[i][0][2]
+        listType = mesh_headers[i][0][2]
 
         if debug:print("new object", new_object.name, '; has tex ID: TexID_{0:03d}'.format(mh_texID))
 
@@ -1553,6 +1621,10 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
 
         # create own collection for each imported file
         obj_col = bpy.data.collections.new(filename)
+        obj_col.naomi_import_meta.source_filepath = filepath
+        obj_col.naomi_import_meta.source_crc32 = calculate_crc32(filepath)
+        obj_col.naomi_import_meta.import_orientation = orientation
+        obj_col.naomi_import_meta.import_neg_scale_x = NegScale_X
 
         obj_col.gp0.objFormat = str(g_headers[0])
         obj_col.gp1.skp1stSrcOp = g_headers[1]
@@ -1562,43 +1634,41 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
 
         #centroid data obj
 
-        
         updatedPoint_X = obj_centroid_header[0]
         updatedPoint_Y = obj_centroid_header[1]
         updatedPoint_Z = obj_centroid_header[2]
 
+        if orientation == 'X_UP':
+
+            updatedPoint_X = obj_centroid_header[yVal]
+            updatedPoint_Y = obj_centroid_header[xVal]
+            updatedPoint_Z = obj_centroid_header[zVal]
+        elif orientation == 'Y_UP':
+
+            updatedPoint_X = obj_centroid_header[xVal]
+            updatedPoint_Y = obj_centroid_header[yVal]
+            updatedPoint_Z = obj_centroid_header[zVal]
+        elif orientation == 'Z_UP':
+
+            updatedPoint_X = obj_centroid_header[xVal]
+            updatedPoint_Y = obj_centroid_header[zVal]
+            updatedPoint_Z = obj_centroid_header[yVal]
+
+        if NegScale_X:
+            updatedPoint_X *= -1.0
+
+        obj_col.naomi_centroidData.centroid_x = updatedPoint_X
+        obj_col.naomi_centroidData.centroid_y = updatedPoint_Y
+        obj_col.naomi_centroidData.centroid_z = updatedPoint_Z
         obj_col.naomi_centroidData.collection_bound_radius = obj_centroid_header[3]
 
-        if orientation == 'X_UP':
-            # swap Y and X axis
-            obj_col.naomi_centroidData.centroid_x = updatedPoint_Y
-            obj_col.naomi_centroidData.centroid_y = updatedPoint_X
-            obj_col.naomi_centroidData.centroid_z = updatedPoint_Z
-    
-        elif orientation == 'Y_UP':
-            # no swap
-            obj_col.naomi_centroidData.centroid_x = updatedPoint_X
-            obj_col.naomi_centroidData.centroid_y = updatedPoint_Y
-            obj_col.naomi_centroidData.centroid_z = updatedPoint_Z
-        elif orientation == 'Z_UP':
-            # swap Y and Z
-            obj_col.naomi_centroidData.centroid_x = updatedPoint_X
-            obj_col.naomi_centroidData.centroid_y = updatedPoint_Z
-            obj_col.naomi_centroidData.centroid_z = updatedPoint_Y
-        else:
-            print("Something wrong")
-        
-        if NegScale_X:
-            # Trying to apply neg X scale: [i]
-            obj_col.naomi_centroidData.centroid_x *= -1.0
-
-        
         bpy.context.scene.collection.children.link(obj_col)
 
         return data2blender(mesh_vertex, mesh_uvs, faces, meshes, meshColors=mesh_colors, meshOffColors=mesh_offcolors,
-                            vertexColors=mesh_vertcol, mesh_headers=mesh_header_s,meshBackface=m_backface,mesh_Env=m_env,mesh_Centroid=m_centroid,
+                            vertexColors=mesh_vertcol, mesh_headers=mesh_header_s, meshBackface=m_backface,
+                            mesh_Env=m_env, mesh_Centroid=m_centroid,
                             parent_col=obj_col, scale=scaling, p_filepath=filepath,
-                            debug=debug)
+                            orientation=orientation, NegScale_X=NegScale_X, debug=debug)
 
 def main_function_import_archive(self, filepath: str, scaling: float, debug: bool, orientation, NegScale_X: bool):
     global model_log
