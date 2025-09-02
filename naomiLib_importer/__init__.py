@@ -2,7 +2,7 @@ bl_info = {
     "name" : "NaomiLib Importer for Blender",
     "author" : "zocker_160, VincentNL, TVIndustries",
     "description" : "Addon for importing NaomiLib .bin/.raw files",
-    "blender" : (4, 1, 1),
+    "blender" : (4, 5, 2),
     "version" : (0, 15, 0),
     "location" : "File > Import",
     "warning" : "",
@@ -14,16 +14,17 @@ import bpy
 import importlib
 import os
 from . import NLimporter as NLi
-# from . import NLexporter as NLe
+from . import NLexporter as NLe
 from bpy.props import StringProperty, BoolProperty, FloatProperty, FloatVectorProperty, PointerProperty
 from bpy_extras.io_utils import ImportHelper, path_reference_mode
 from bpy_extras.io_utils import ExportHelper
 import tempfile
 import subprocess
+import struct
 
 
 importlib.reload(NLi)
-# importlib.reload(NLe)
+importlib.reload(NLe)
 
 
 def import_nl(self, context, filepath: str, bCleanup: bool, bArchive: bool, fScaling: float, bDebug: bool, bOrientation, bNegScale_X: bool):
@@ -166,7 +167,17 @@ class Naomi_Centroid_Data(bpy.types.PropertyGroup):
         default=1.0,
         min=0.0,
     )
-    
+    source_filepath: bpy.props.StringProperty(name="Source File Path")
+    source_crc32: bpy.props.StringProperty(name="Source CRC32")
+    import_orientation: bpy.props.StringProperty(name="Import Orientation")
+    import_neg_scale_x: bpy.props.BoolProperty(name="Import Negative X Scale")
+
+class Naomi_Import_Meta(bpy.types.PropertyGroup):
+    source_filepath: bpy.props.StringProperty(name="Source File Path")
+    source_crc32: bpy.props.StringProperty(name="Source CRC32")
+    import_orientation: bpy.props.StringProperty(name="Import Orientation")
+    import_neg_scale_x: bpy.props.BoolProperty(name="Import Negative X Scale")
+
 class COL_PT_collection_gps(bpy.types.Panel):
     _context_path = "collection"
     _property_type = bpy.types.Collection
@@ -925,7 +936,8 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
         box.prop(naomi_tex_ctrl, "texCtrlUstride")
 
 
-classes = [Naomi_GlobalParam_0, Naomi_GlobalParam_1, Naomi_Centroid_Data, COL_PT_collection_gps, Naomi_Param_Properties, Naomi_ISP_TSP_Properties, Naomi_TSP_Properties, Naomi_TexCtrl_Properties, OBJECT_PT_Naomi_Properties]
+classes = [Naomi_GlobalParam_0, Naomi_GlobalParam_1, Naomi_Centroid_Data, Naomi_Import_Meta, COL_PT_collection_gps, Naomi_Param_Properties, Naomi_ISP_TSP_Properties, Naomi_TSP_Properties, Naomi_TexCtrl_Properties, OBJECT_PT_Naomi_Properties]
+
 
 class ExportNaomiBin(bpy.types.Operator, ExportHelper):
     """Export 3D models to NaomiLib .bin format"""
@@ -933,27 +945,91 @@ class ExportNaomiBin(bpy.types.Operator, ExportHelper):
     bl_label = "Export NaomiLib .bin"
     filename_ext = ".bin"
 
-    def write_naomi_bin(self, filepath):
-        """Wrapper to call the function in NLexporter.py"""
-        try:
-            obj = bpy.context.object
-            if not obj:
-                self.report({'ERROR'}, "No active object selected.")
-                return {'CANCELLED'}
+    # Choose update mode
+    update_mode: bpy.props.BoolProperty(
+        name="Update Model (NO REMESH)",
+        description="Update existing file without remeshing - preserves original structure",
+        default=False
+    )
 
-            # Call the external function
-            NLe.write_naomi_bin(filepath, obj)
-            self.report({'INFO'}, f"Successfully exported to {filepath}")
+    def execute(self, context):
+        try:
+            if self.update_mode:
+                active_layer_collection = context.view_layer.active_layer_collection
+
+                # No collection selected
+                if not active_layer_collection:
+                    def draw(self, context):
+                        self.layout.label(text="No collection selected.")
+                        self.layout.label(text="Please select an imported collection")
+                        self.layout.label(text="(like 'test.bin') in the Outliner.")
+
+                    bpy.context.window_manager.popup_menu(draw, title="Selection Error", icon='ERROR')
+                    return {'CANCELLED'}
+
+                selected_collection = active_layer_collection.collection
+
+                # If Scene Collection is selected, try to get parent collection of active object
+                if selected_collection == context.scene.collection:
+                    active_obj = context.active_object
+                    if active_obj and active_obj.users_collection:
+                        # Get the first collection that contains this object (excluding Scene Collection)
+                        for collection in active_obj.users_collection:
+                            if collection != context.scene.collection:
+                                selected_collection = collection
+                                break
+                        else:
+                            # No valid collection found
+                            def draw(self, context):
+                                self.layout.label(text="Cannot determine target collection.")
+                                self.layout.label(text="Please select a specific imported")
+                                self.layout.label(text="collection (like 'cube.bin') or")
+                                self.layout.label(text="an object within that collection.")
+
+                            bpy.context.window_manager.popup_menu(draw, title="Invalid Selection", icon='ERROR')
+                            return {'CANCELLED'}
+                    else:
+                        def draw(self, context):
+                            self.layout.label(text="No object or collection selected.")
+                            self.layout.label(text="Please select an imported collection")
+                            self.layout.label(text="or an object within it.")
+
+                        bpy.context.window_manager.popup_menu(draw, title="Selection Error", icon='ERROR')
+                        return {'CANCELLED'}
+
+                # Verify the collection has import metadata
+                if not hasattr(selected_collection,
+                               'naomi_import_meta') or not selected_collection.naomi_import_meta.source_filepath:
+                    def draw(self, context):
+                        self.layout.label(text=f"Collection '{selected_collection.name}' was not")
+                        self.layout.label(text="imported from a NaomiLib file.")
+                        self.layout.label(text="Update mode only works with imported collections.")
+
+                    bpy.context.window_manager.popup_menu(draw, title="Invalid Collection", icon='ERROR')
+                    return {'CANCELLED'}
+
+                NLe.update_naomi_bin(self.filepath, selected_collection)
+
+                # Update the CRC in memory if successful export
+                selected_collection.naomi_import_meta.source_crc32 = NLe.calculate_crc32(self.filepath)
+
+                self.report({'INFO'},
+                            f"Successfully updated {self.filepath} using collection '{selected_collection.name}'")
+            else:
+                # Complete Remesh - PLACEHOLDER! -
+                obj = bpy.context.object
+                if not obj:
+                    self.report({'ERROR'}, "No active object selected.")
+                    return {'CANCELLED'}
+
+                NLe.write_naomi_bin(self.filepath, obj)
+                self.report({'INFO'}, f"Successfully exported to {self.filepath}")
+
             return {'FINISHED'}
 
         except Exception as e:
             self.report({'ERROR'}, str(e))
             return {'CANCELLED'}
-
-    def execute(self, context):
-        return self.write_naomi_bin(self.filepath)
-
-
 
 
 def menu_func_import(self, context):
@@ -965,29 +1041,31 @@ def menu_func_export(self, context):
 
 def register():
     bpy.utils.register_class(ImportNL)
-    bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
-    #bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
-    for cls in classes:
-        bpy.utils.register_class(cls)
-    bpy.types.Object.naomi_param = bpy.props.PointerProperty(type= Naomi_Param_Properties)
-    bpy.types.Object.naomi_isp_tsp = bpy.props.PointerProperty(type= Naomi_ISP_TSP_Properties)
-    bpy.types.Object.naomi_tsp = bpy.props.PointerProperty(type= Naomi_TSP_Properties)
-    bpy.types.Object.naomi_texCtrl = bpy.props.PointerProperty(type= Naomi_TexCtrl_Properties)
-    bpy.types.Collection.gp0 = bpy.props.PointerProperty(type= Naomi_GlobalParam_0)
-    bpy.types.Collection.gp1 = bpy.props.PointerProperty(type= Naomi_GlobalParam_1)
-    bpy.types.Collection.naomi_centroidData = bpy.props.PointerProperty(type= Naomi_Centroid_Data)
-    # Exporter
     bpy.utils.register_class(ExportNaomiBin)
+    bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
+    for cls in classes:
+        bpy.utils.register_class(cls)
 
+    bpy.types.Object.naomi_param = bpy.props.PointerProperty(type=Naomi_Param_Properties)
+    bpy.types.Object.naomi_isp_tsp = bpy.props.PointerProperty(type=Naomi_ISP_TSP_Properties)
+    bpy.types.Object.naomi_tsp = bpy.props.PointerProperty(type=Naomi_TSP_Properties)
+    bpy.types.Object.naomi_texCtrl = bpy.props.PointerProperty(type=Naomi_TexCtrl_Properties)
+    bpy.types.Collection.gp0 = bpy.props.PointerProperty(type=Naomi_GlobalParam_0)
+    bpy.types.Collection.gp1 = bpy.props.PointerProperty(type=Naomi_GlobalParam_1)
+    bpy.types.Collection.naomi_centroidData = bpy.props.PointerProperty(type=Naomi_Centroid_Data)
+    bpy.types.Collection.naomi_import_meta = bpy.props.PointerProperty(type=Naomi_Import_Meta)
 
 def unregister():
     bpy.utils.unregister_class(ImportNL)
+    bpy.utils.unregister_class(ExportNaomiBin)
     bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
-    #bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+
     for cls in classes:
         bpy.utils.unregister_class(cls)
+
     del bpy.types.Object.naomi_param
     del bpy.types.Object.naomi_isp_tsp
     del bpy.types.Object.naomi_tsp
@@ -995,9 +1073,8 @@ def unregister():
     del bpy.types.Collection.gp0
     del bpy.types.Collection.gp1
     del bpy.types.Collection.naomi_centroidData
-    # Exporter
-    bpy.utils.unregister_class(ExportNaomiBin)
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    del bpy.types.Collection.naomi_import_meta
+
 
 if __name__ == "__main__":
     register()
