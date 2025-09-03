@@ -671,7 +671,8 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
             if debug: print("MESH END offset m > 0:", mesh_end_offset)
 
         #print(m_headr_grps[0][5])
-        m_tex_shading=m_headr_grps[-1][-1]
+        m_tex_shading=m_headr_grps[-1][5]
+        print(m_tex_shading)
         faces_vertex = list()
         faces_index = list()
         vert_col = list()
@@ -753,6 +754,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
                     vertex.append(read_point3_buff())
 
                 if not type_b:
+
                     if m_tex_shading == -3:  # It's TypeC vertex format, get sint8 normals and vert colors
                         type_c()
                         texture_uv.append(read_point2_buff())
@@ -885,7 +887,7 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 
         mesh_vertices.append(points)
         mesh_uvs.append(textures)
-        #print(f"vertex_color list: {vert_col}")
+        # print(f"vertex_color list: {vert_col}")
 
     if debug: print("number of meshes found:", m)
     # print(meshes[0]['face_vertex'][0]['point'][1])
