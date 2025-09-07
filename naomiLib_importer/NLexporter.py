@@ -8,6 +8,7 @@ from io import BytesIO
 from mathutils import Vector
 import zlib
 import bmesh
+import numpy as np
 
 xVal = 0
 yVal = 1
@@ -214,161 +215,84 @@ def mesh_data_update(collection):
                 pass
 
 
-def recalc_individual_mesh_centroids(collection):
+def recalc_centroids(collection, recalc_individual=True, recalc_collection=True):
+    # recalculate per-mesh and collection centroids/radii
 
-    original_active = bpy.context.view_layer.objects.active
-    original_selected = bpy.context.selected_objects.copy()
-    original_mode = bpy.context.object.mode if bpy.context.object else 'OBJECT'
+    ctx = bpy.context
+    orig_active = ctx.view_layer.objects.active
+    orig_selected = ctx.selected_objects.copy()
+    orig_mode = ctx.object.mode if ctx.object else 'OBJECT'
 
-    mesh_objects = [obj for obj in collection.objects if obj.type == 'MESH' and obj.data.vertices]
+    mesh_objects = [o for o in collection.objects if o.type == 'MESH' and o.data.vertices]
+    # print(f"Centroid calculation for '{collection.name}' with {len(mesh_objects)} meshes...")
 
-    print(f"Starting individual mesh centroid calculation for {len(mesh_objects)} objects...")
+    coll_vertices = []
 
     try:
-        # Clear current selection
-        for obj in bpy.context.selected_objects:
-            obj.select_set(False)
+        for o in ctx.selected_objects:
+            o.select_set(False)
 
         for obj in mesh_objects:
-            if obj.type != 'MESH' or not obj.data.vertices:
-                print(f"Skipping {obj.name}: Not a mesh or no vertices")
-                continue
-
-            # Select and activate object
             obj.select_set(True)
-            bpy.context.view_layer.objects.active = obj
+            ctx.view_layer.objects.active = obj
 
-            was_in_edit_mode = bpy.context.object.mode == 'EDIT'
-
-            if was_in_edit_mode:
-                bpy.ops.object.editmode_toggle()
-            elif bpy.context.object.mode != 'OBJECT':
+            if ctx.object.mode != 'OBJECT':
                 bpy.ops.object.mode_set(mode='OBJECT')
 
-            # Update mesh data without transforms
             mesh = obj.data
             mesh.update()
             mesh.calc_loop_triangles()
-            bpy.context.view_layer.update()
 
-            # Calculate centroid
-            world_matrix = obj.matrix_world
-            vertices = mesh.vertices
-
-            # Transform all vertices to world space
-            world_vertices = [world_matrix @ v.co for v in vertices]
-
-            # Calculate centroid in world space
-            centroid_x = sum(v.x for v in world_vertices) / len(world_vertices)
-            centroid_y = sum(v.y for v in world_vertices) / len(world_vertices)
-            centroid_z = sum(v.z for v in world_vertices) / len(world_vertices)
-            centroid = Vector((centroid_x, centroid_y, centroid_z))
-
-            # Calculate bound radius (max distance from centroid to any world vertex)
-            bound_radius = max((v - centroid).length for v in world_vertices) if world_vertices else 0.0
-
-            # Ensure naomi_param exists and update it
-            if not hasattr(obj, 'naomi_param'):
-                print(f"Warning: {obj.name} has no naomi_param property!")
+            verts = np.array([v.co[:] for v in mesh.vertices], dtype=np.float32)
+            if not verts.size:
                 obj.select_set(False)
                 continue
 
-            obj.naomi_param.centroid_x = centroid_x
-            obj.naomi_param.centroid_y = centroid_y
-            obj.naomi_param.centroid_z = centroid_z
-            obj.naomi_param.bound_radius = bound_radius
+            # per-object centroid
+            if recalc_individual:
+                minc, maxc = np.min(verts, 0), np.max(verts, 0)
+                centroid = (minc + maxc) / 2
+                radius = float(np.sqrt(((verts - centroid) ** 2).sum(1).max()))
+                if hasattr(obj, "naomi_param"):
+                    obj.naomi_param.centroid_x, obj.naomi_param.centroid_y, obj.naomi_param.centroid_z = map(float, centroid)
+                    obj.naomi_param.bound_radius = radius
+                    # print(f"Updated '{obj.name}': centroid=({centroid[0]:.6f},{centroid[1]:.6f},{centroid[2]:.6f}), r={radius:.6f}")
+                else:
+                    print(f"Warning: {obj.name} has no naomi_param")
 
-            print(
-                f"Updated mesh '{obj.name}': world centroid=({centroid_x:.3f}, {centroid_y:.3f}, {centroid_z:.3f}), radius={bound_radius:.3f}")
+            # prepare for collection calc
+            if recalc_collection and hasattr(obj, "naomi_param"):
+                coll_vertices.append(verts)
 
             obj.select_set(False)
 
-        bpy.context.view_layer.update()
+        # collection centroid
+        if recalc_collection:
+            if not coll_vertices:
+                if hasattr(collection, "naomi_centroidData"):
+                    collection.naomi_centroidData.centroid_x = \
+                    collection.naomi_centroidData.centroid_y = \
+                    collection.naomi_centroidData.centroid_z = 0.0
+                    collection.naomi_centroidData.collection_bound_radius = 0.0
+                print("No valid vertices for collection centroid.")
+            else:
+                allv = np.vstack(coll_vertices).astype(np.float32)
+                minc, maxc = np.min(allv, 0), np.max(allv, 0)
+                centroid = (minc + maxc) / 2
+                radius = float(np.sqrt(((allv - centroid) ** 2).sum(1).max()))
+                if hasattr(collection, "naomi_centroidData"):
+                    collection.naomi_centroidData.centroid_x, collection.naomi_centroidData.centroid_y, collection.naomi_centroidData.centroid_z = map(float, centroid)
+                    collection.naomi_centroidData.collection_bound_radius = radius
+                    # print(f"Updated collection '{collection.name}': centroid=({centroid[0]:.6f},{centroid[1]:.6f},{centroid[2]:.6f}), r={radius:.6f}")
 
     finally:
-        # Restore original selection and mode
-        for obj in bpy.context.selected_objects:
-            obj.select_set(False)
-        for obj in original_selected:
-            obj.select_set(True)
-        bpy.context.view_layer.objects.active = original_active
+        for o in ctx.selected_objects: o.select_set(False)
+        for o in orig_selected: o.select_set(True)
+        ctx.view_layer.objects.active = orig_active
+        if orig_active and orig_mode != 'OBJECT':
+            try: bpy.ops.object.mode_set(mode=orig_mode)
+            except: pass
 
-        if original_active and original_mode == 'EDIT':
-            try:
-                bpy.context.view_layer.objects.active = original_active
-                bpy.ops.object.editmode_toggle()
-            except:
-                pass
-        elif original_active and original_mode != 'OBJECT':
-            try:
-                bpy.context.view_layer.objects.active = original_active
-                bpy.ops.object.mode_set(mode=original_mode)
-            except:
-                pass
-
-    print("Individual mesh centroid calculation completed.")
-
-
-def recalc_collection_centroid_and_radius(collection):
-    print(f"Starting collection centroid calculation for '{collection.name}'...")
-
-    mesh_objects = [obj for obj in collection.objects if obj.type == 'MESH' and obj.data.vertices]
-
-    if not mesh_objects:
-        print("No mesh objects found in collection, setting default values")
-        if hasattr(collection, 'naomi_centroidData'):
-            collection.naomi_centroidData.centroid_x = 0.0
-            collection.naomi_centroidData.centroid_y = 0.0
-            collection.naomi_centroidData.centroid_z = 0.0
-            collection.naomi_centroidData.collection_bound_radius = 0.0
-        return
-
-    valid_objects = []
-    for obj in mesh_objects:
-        if hasattr(obj, 'naomi_param'):
-            valid_objects.append(obj)
-        else:
-            print(f"Warning: Object {obj.name} has no naomi_param, skipping from collection calculation")
-
-    if not valid_objects:
-        print("No valid objects with naomi_param found")
-        return
-
-    # calculate collection centroid as average of all mesh centroids
-    total_centroid_x = sum(obj.naomi_param.centroid_x for obj in valid_objects)
-    total_centroid_y = sum(obj.naomi_param.centroid_y for obj in valid_objects)
-    total_centroid_z = sum(obj.naomi_param.centroid_z for obj in valid_objects)
-
-    collection_centroid_x = total_centroid_x / len(valid_objects)
-    collection_centroid_y = total_centroid_y / len(valid_objects)
-    collection_centroid_z = total_centroid_z / len(valid_objects)
-
-    # calculate collection bound radius using the same world-space method
-    collection_centroid = Vector((collection_centroid_x, collection_centroid_y, collection_centroid_z))
-    max_distance = 0.0
-
-    for obj in valid_objects:
-        # world coordinate calculation as individual mesh function
-        world_matrix = obj.matrix_world
-        for vertex in obj.data.vertices:
-            world_vertex = world_matrix @ vertex.co
-            distance = (world_vertex - collection_centroid).length
-            if distance > max_distance:
-                max_distance = distance
-
-    # update collection naomi parameters
-    if not hasattr(collection, 'naomi_centroidData'):
-        print(f"Warning: Collection {collection.name} has no naomi_centroidData property!")
-        return
-
-    collection.naomi_centroidData.centroid_x = collection_centroid_x
-    collection.naomi_centroidData.centroid_y = collection_centroid_y
-    collection.naomi_centroidData.centroid_z = collection_centroid_z
-    collection.naomi_centroidData.collection_bound_radius = max_distance
-
-    print(
-        f"Updated collection '{collection.name}': centroid=({collection_centroid_x:.3f}, {collection_centroid_y:.3f}, {collection_centroid_z:.3f}), radius={max_distance:.3f}")
-    print("Collection centroid calculation completed.")
 
 # ---------------------------
 # NL file update (NO REMESH!)
@@ -397,13 +321,10 @@ def update_naomi_bin(filepath, collection):
     orientation = collection.naomi_import_meta.import_orientation
     neg_scale_x = collection.naomi_import_meta.import_neg_scale_x
 
-    # apply transforms ONLY during export
     mesh_data_update(collection)
     bpy.context.view_layer.update()
 
-    # Recalculate centroids
-    #recalc_individual_mesh_centroids(collection)
-    #recalc_collection_centroid_and_radius(collection)
+    recalc_centroids(collection)
 
 
     # -----------------------------
