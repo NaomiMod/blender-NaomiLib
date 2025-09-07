@@ -10,6 +10,7 @@ from io import BytesIO
 from math import radians
 from mathutils import Vector
 import zlib
+from mathutils import Matrix
 
 def calculate_crc32(filepath):
     crc = 0
@@ -670,9 +671,9 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 
             if debug: print("MESH END offset m > 0:", mesh_end_offset)
 
-        #print(m_headr_grps[0][5])
+        # print(m_headr_grps[0][5])
         m_tex_shading=m_headr_grps[-1][5]
-        print(m_tex_shading)
+        # print(m_tex_shading)
         faces_vertex = list()
         faces_index = list()
         vert_col = list()
@@ -915,76 +916,14 @@ def parse_nl(nl_bytes: bytes, orientation, NegScale_X: bool, debug=False) -> lis
 ########################
 
 def cleanup():
-    """Clean up scene with proper error handling"""
     try:
-        # Ensure we're in object mode first
-        if bpy.context.mode != 'OBJECT':
-            try:
-                bpy.ops.object.mode_set(mode='OBJECT')
-            except RuntimeError:
-                pass  # Ignore if no active object
+        # Reset to an empty scene
+        bpy.ops.wm.read_homefile(use_empty=True)
 
-        # Deselect all objects (only if there are objects to deselect)
-        if bpy.context.scene.objects:
-            try:
-                bpy.ops.object.select_all(action='DESELECT')
-            except RuntimeError:
-                # Alternative method if select_all fails
-                for obj in bpy.context.scene.objects:
-                    obj.select_set(False)
-                bpy.context.view_layer.objects.active = None
-
-        # Select and delete all objects
-        if bpy.context.scene.objects:
-            try:
-                bpy.ops.object.select_all(action='SELECT')
-                bpy.ops.object.delete(use_global=False)
-            except RuntimeError:
-                # Alternative deletion method
-                objects_to_delete = list(bpy.context.scene.objects)
-                for obj in objects_to_delete:
-                    bpy.data.objects.remove(obj, do_unlink=True)
-
-    except Exception as e:
-        print(f"Error during object cleanup: {e}")
-
-    try:
-        # Remove all materials
-        materials_to_remove = [mat for mat in bpy.data.materials if mat.users == 0]
-        for material in materials_to_remove:
-            bpy.data.materials.remove(material)
-    except Exception as e:
-        print(f"Error during material cleanup: {e}")
-
-    try:
-        # Remove all collections (check if they're empty first)
-        collections_to_remove = [col for col in bpy.data.collections if len(col.objects) == 0]
-        for collection in collections_to_remove:
-            bpy.data.collections.remove(collection)
-    except Exception as e:
-        print(f"Error during collection cleanup: {e}")
-
-    try:
-        # Remove unused meshes
-        meshes_to_remove = [mesh for mesh in bpy.data.meshes if mesh.users == 0]
-        for mesh in meshes_to_remove:
-            bpy.data.meshes.remove(mesh)
-    except Exception as e:
-        print(f"Error during mesh cleanup: {e}")
-
-    try:
-        # Remove unused images
-        images_to_remove = [image for image in bpy.data.images if image.users == 0]
-        for image in images_to_remove:
-            bpy.data.images.remove(image)
-    except Exception as e:
-        print(f"Error during image cleanup: {e}")
-
-    # Final update
-    try:
+        # Ensure context is valid afterward
         bpy.context.view_layer.update()
     except Exception as e:
-        print(f"Error during final update: {e}")
+        print(f"Error during cleanup: {e}")
 
     print("Scene cleanup completed")
 
@@ -1005,8 +944,11 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
 
     if debug: print("meshes:", len(meshes))
 
-
     for i, mesh in enumerate(meshes):
+
+        vertex_color_node = None
+        texture_node = None
+        input_node = None
 
         # Create new mesh
         new_mesh = bpy.data.meshes.new(name=f"mesh_{i}")
@@ -1112,7 +1054,7 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_object.naomi_param.meshColor = meshColors[i]
         new_object.naomi_param.meshOffsetColor = meshOffColors[i]
         new_object.naomi_param.m_shad_type = '0' if mesh_headers[i][5] >= 0 else str(mesh_headers[i][5])
-        new_object.naomi_param.texture_ambient_light = mesh_headers[i][6]  # Add this line
+        new_object.naomi_param.m_ambient_light = mesh_headers[i][6]
 
         # Assign variables
         mh_texID = mesh_headers[i][4]
@@ -1582,10 +1524,52 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
             new_mat.roughness = spec_val
             new_mat.metallic = 0.0
 
+            input_node = new_mat.node_tree.nodes.get('Principled BSDF')
+            if input_node is None:
+                print(f"Warning: No Principled BSDF found for material {new_mat.name}")
+                continue
+
+            # Handle ambient light as emission color
+            m_tex_amb = mesh_headers[i][6]  # ambient light float 0-1
+            ambient_factor = float(m_tex_amb) if m_tex_amb is not None else 1.0
+            ambient_factor = max(0.0, min(1.0, ambient_factor))  # clamp 0..1
+
+            # Apply ambient lighting by connecting the same color source to Emission Color
+            if ambient_factor > 0.0:
+                # Find what is currently connected to Base Color
+                base_color_input = input_node.inputs['Base Color']
+                current_connection = None
+
+                # Check if Base Color has a connection
+                for link in new_mat.node_tree.links:
+                    if link.to_socket == base_color_input:
+                        current_connection = link.from_socket
+                        break
+
+                # Connect the same source to Emission Color
+                if current_connection is not None:
+                    if 'Emission Color' in input_node.inputs:
+                        new_mat.node_tree.links.new(current_connection, input_node.inputs['Emission Color'])
+                    elif 'Emission' in input_node.inputs:  # Older Blender versions
+                        new_mat.node_tree.links.new(current_connection, input_node.inputs['Emission'])
+                else:
+                    # No connection, use material base color
+                    if 'Emission Color' in input_node.inputs:
+                        input_node.inputs['Emission Color'].default_value = meshColors[i]
+                    elif 'Emission' in input_node.inputs:
+                        input_node.inputs['Emission'].default_value = meshColors[i]
+
+                # Set emission strength to ambient factor (0-1)
+                if 'Emission Strength' in input_node.inputs:
+                    input_node.inputs['Emission Strength'].default_value = ambient_factor
 
         new_object.data.materials.append(new_mat)
         # link object to parent collection
         parent_col.objects.link(new_object)
+
+        # Manually set the origin to the exact centroid coordinates
+        new_object.data.transform(Matrix.Translation((-mesh_centr_x, -mesh_centr_y, -mesh_centr_z)))
+        new_object.location = (mesh_centr_x * scale, mesh_centr_y * scale, mesh_centr_z * scale)
 
     return True
 
@@ -1604,7 +1588,7 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
     if size >= 0xd8:
         if debug:print(filepath)
         filename = filepath.split(os.sep)[-1]
-        print(filename + '\n')
+        # print(filename + '\n')
 
         if debug:
             model_log = ''
