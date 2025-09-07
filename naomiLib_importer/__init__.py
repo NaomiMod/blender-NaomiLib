@@ -21,6 +21,8 @@ from bpy_extras.io_utils import ExportHelper
 import tempfile
 import subprocess
 import struct
+from mathutils import Vector
+from mathutils import Matrix
 
 
 importlib.reload(NLi)
@@ -232,92 +234,148 @@ class COL_PT_collection_gps(bpy.types.Panel):
         row.prop(naomi_centroidData_p, "collection_bound_radius", text="")
 
 
+def update_mesh_ambient(self, context):
+    obj = getattr(bpy.context, "active_object", None)
+    if obj is None or not obj.material_slots:
+        return
+
+    material = obj.material_slots[0].material
+    if not (material and material.use_nodes and material.node_tree):
+        return
+
+    principled_node = next(
+        (node for node in material.node_tree.nodes if node.type == 'BSDF_PRINCIPLED'),
+        None
+    )
+    if principled_node is None:
+        return
+
+    ambient_factor = max(0.0, min(1.0, getattr(self, "m_ambient_light", 0.0)))
+
+    # Find Base Color input and see if it's linked
+    base_color_input = principled_node.inputs.get('Base Color')
+    emission_input = principled_node.inputs.get('Emission')
+    emission_strength_input = principled_node.inputs.get('Emission Strength')
+
+    if base_color_input and emission_input:
+        current_connection = None
+        for link in material.node_tree.links:
+            if link.to_socket == base_color_input:
+                current_connection = link.from_socket
+                break
+
+        if current_connection:
+            # Link Base Color source to Emission
+            material.node_tree.links.new(current_connection, emission_input)
+        else:
+            # No connection, copy Base Color value
+            emission_input.default_value = base_color_input.default_value
+
+    if emission_strength_input:
+        emission_strength_input.default_value = ambient_factor
+
+
 
 def update_mesh_color(self, context):
-    active_object = bpy.context.active_object
-    if active_object:
-        # Check if the object has a material
-        if active_object.material_slots:
-            material = active_object.material_slots[0].material
-            if material.use_nodes and material.node_tree:
-                # Find the Specular BSDF shader node
-                principled_node = None
-                for node in material.node_tree.nodes:
-                    if node.type == 'BSDF_PRINCIPLED':
-                        principled_node = node
-                        break
 
-                if principled_node:
-                    # Update the base color of the Principled BSDF shader
-                    base_color = self.meshColor
-                    principled_node.inputs['Base Color'].default_value = (
-                    base_color)  # Convert to tuple (R, G, B, A)
+    obj = getattr(bpy.context, "active_object", None)
+    if obj is None:
+        return  # Nothing to update
+
+    if not obj.material_slots:
+        return
+
+    material = obj.material_slots[0].material
+    if not (material and material.use_nodes and material.node_tree):
+        return
+
+    principled_node = next(
+        (node for node in material.node_tree.nodes if node.type == 'BSDF_PRINCIPLED'),
+        None
+    )
+    if principled_node is None:
+        return
+
+    # Update the base color of the Principled BSDF shader
+    principled_node.inputs['Base Color'].default_value = self.meshColor
+
 
 def update_mesh_offsetcolor(self, context):
-    active_object = bpy.context.active_object
-    if active_object:
-        # Check if the object has a material
-        if active_object.material_slots:
-            material = active_object.material_slots[0].material
-            if material.use_nodes and material.node_tree:
-                # Find the Principled BSDF shader node
-                principled_node = None
-                for node in material.node_tree.nodes:
-                    if node.type == 'BSDF_PRINCIPLED':
-                        principled_node = node
-                        break
 
-                if principled_node:
-                    # Update the base color of the Principled BSDF shader
-                    base_color = self.meshOffsetColor
-                    principled_node.inputs['Specular Tint'].default_value = (
-                    base_color)  # Convert to tuple (R, G, B, A)
+    obj = getattr(bpy.context, "active_object", None)
+    if obj is None:
+        return  # Nothing to update
+
+    if not obj.material_slots:
+        return
+
+    material = obj.material_slots[0].material
+    if not (material and material.use_nodes and material.node_tree):
+        return
+
+    principled_node = next(
+        (node for node in material.node_tree.nodes if node.type == 'BSDF_PRINCIPLED'),
+        None
+    )
+    if principled_node is None:
+        return
+
+    # Update the specular tint of the Principled BSDF shader
+    principled_node.inputs['Specular Tint'].default_value = self.meshOffsetColor
 
 
 def update_texture(self, context):
-    active_obj = bpy.context.active_object
 
-    if active_obj and active_obj.type == 'MESH':
-        texture_filepaths = set()  # Use a set for faster membership checking
+    obj = getattr(bpy.context, "active_object", None)
+    if obj is None or obj.type != 'MESH':
+        return  # Nothing to do
 
-        mh_texID = self.mh_texID
-        textureFileFormats = ('bmp', 'png')
+    texture_filepaths = set()  # Track textures we've loaded
+    mh_texID = max(0, self.mh_texID)
+    textureFileFormats = ('bmp', 'png')
 
-        for material_slot in active_obj.material_slots:
-            material = material_slot.material
-            for node in material.node_tree.nodes:
-                if node.type == 'TEX_IMAGE':
-                    tex_node = node
-                    image = tex_node.image
-                    if image:
-                        texFileName = f'TexID_{mh_texID:03d}'
-                        texDir, filename = os.path.split(image.filepath)
-                        texPath = os.path.join(texDir, texFileName)
+    for material_slot in obj.material_slots:
+        material = material_slot.material
+        if not (material and material.use_nodes and material.node_tree):
+            continue  # Skip if no usable material
 
-                        for format in textureFileFormats:
-                            potential_tex_path = texPath + '.' + format
-                            if os.path.exists(potential_tex_path):
-                                texPath = potential_tex_path
-                                break
+        for node in material.node_tree.nodes:
+            if node.type != 'TEX_IMAGE':
+                continue
 
-                        for img in bpy.data.images:
-                            if img.filepath == texPath:
-                                tex_node.image = img
-                                break
-                        else:
-                            if os.path.exists(texPath):
-                                loaded_image = bpy.data.images.load(texPath)
-                                tex_node.image = loaded_image
-                                texture_filepaths.add(texPath)
+            tex_node = node
+            image = tex_node.image
+            if not image:
+                continue
 
-                # Prevent edit box to assign Negative values
-                if self.mh_texID < 0:
-                    self.mh_texID = 0  # Set the value to 0 if it's negative
-                    bpy.context.area.tag_redraw()
-    else:
-        pass
-        #if debug:print("No active mesh object with materials found.")
+            texFileName = f'TexID_{mh_texID:03d}'
+            texDir, filename = os.path.split(image.filepath)
+            texPath = os.path.join(texDir, texFileName)
 
+            for fmt in textureFileFormats:
+                potential_tex_path = texPath + '.' + fmt
+                if os.path.exists(potential_tex_path):
+                    texPath = potential_tex_path
+                    break
+
+            found = False
+            for img in bpy.data.images:
+                if img.filepath == texPath:
+                    tex_node.image = img
+                    found = True
+                    break
+
+            if not found and os.path.exists(texPath):
+                try:
+                    loaded_image = bpy.data.images.load(texPath)
+                    tex_node.image = loaded_image
+                    texture_filepaths.add(texPath)
+                except Exception as e:
+                    print(f"Failed to load texture {texPath}: {e}")
+
+    area = getattr(bpy.context, "area", None)
+    if area:
+        area.tag_redraw()
 
 
 class Naomi_Param_Properties(bpy.types.PropertyGroup):
@@ -520,12 +578,13 @@ class Naomi_Param_Properties(bpy.types.PropertyGroup):
 
     )
 
-    texture_ambient_light: bpy.props.FloatProperty(
-        description="Texture Ambient Light",
-        name="Texture Ambient Light",
+    m_ambient_light: bpy.props.FloatProperty(
+        description="Ambient Light",
+        name="Ambient Light",
         default=0.0,
         min=0.0,
         max=1.0,
+        update=update_mesh_ambient,
     )
 
 
@@ -874,8 +933,8 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
 
         # Texture Ambient Light
         row = box.row()
-        row.label(text="Texture Ambient Light:")
-        row.prop(naomi_param_p, "texture_ambient_light", text="")
+        row.label(text="Ambient Light:")
+        row.prop(naomi_param_p, "m_ambient_light", text="")
 
         # Other params
         box.prop(naomi_param_p, "paramType")        # 31-29
@@ -949,13 +1008,31 @@ class ExportNaomiBin(bpy.types.Operator, ExportHelper):
     update_mode: bpy.props.BoolProperty(
         name="Update Model (NO REMESH)",
         description="Update existing file without remeshing - preserves original structure",
-        default=False
+        default=True
     )
+
+    recalculate_centroid: bpy.props.BoolProperty(
+        name="Recalculate Centroid",
+        description="Recalculate object and collection centroids before export",
+        default=True
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "update_mode")
+        layout.prop(self, "recalculate_centroid")
 
     def execute(self, context):
         try:
+
             if self.update_mode:
                 active_layer_collection = context.view_layer.active_layer_collection
+
+                if self.recalculate_centroid:
+                    selected_collection = active_layer_collection.collection
+                    NLe.recalc_individual_mesh_centroids(selected_collection)
+                    NLe.recalc_collection_centroid_and_radius(selected_collection)
+
 
                 # No collection selected
                 if not active_layer_collection:
