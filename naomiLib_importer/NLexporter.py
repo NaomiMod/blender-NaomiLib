@@ -44,6 +44,84 @@ def reverse_axis_transformation(vertex, orientation, neg_scale_x):
 
 
 # -------------------------
+# Material parameter comparison
+# -------------------------
+
+def get_material_parameters(obj):
+    p = obj.naomi_param
+    return {
+        'paramType': p.paramType,
+        'endOfStrip': p.endOfStrip,
+        'listType': p.listType,
+        'grpEn': p.grpEn,
+        'stripLen': p.stripLen,
+        'usrClip': p.usrClip,
+        'shadow': p.shadow,
+        'volume': p.volume,
+        'textureUsage': p.textureUsage,
+        'offsColorUsage': p.offsColorUsage,
+        'gouraudShdUsage': p.gouraudShdUsage,
+        'uvDataSize': p.uvDataSize,
+        'mh_texID': p.mh_texID,
+        'm_tex_shading': p.m_tex_shading,
+        'm_ambient_light': p.m_ambient_light,
+        'meshColor': tuple(p.meshColor),
+        'meshOffsetColor': tuple(p.meshOffsetColor)
+    }
+
+
+def parameters_match(params1, params2, ambient_tolerance=1e-6):
+    if len(params1) != len(params2):
+        return False
+
+    for key, val1 in params1.items():
+        val2 = params2.get(key)
+        if val2 is None:
+            return False
+
+        # Special handling for ambient light only
+        if key == 'm_ambient_light':
+            if abs(val1 - val2) > ambient_tolerance:
+                return False
+        else:
+            # Exact comparison for everything else
+            if val1 != val2:
+                return False
+
+    return True
+
+
+def adjust_color_type_intensity(mesh_objects):
+    if not mesh_objects:
+        return
+
+    previous_params = None
+
+    for i, obj in enumerate(mesh_objects):
+        if obj.naomi_param.colType not in ['2', '3']:
+            continue
+
+        current_params = get_material_parameters(obj)
+
+        # Intensity 1 if no previous or different params
+        if obj.naomi_param.colType == '3' and (
+                not previous_params or not parameters_match(current_params, previous_params)):
+            obj.naomi_param.colType = '2'
+
+        # If it's Intensity 1, set matching consecutive meshes to Intensity 2
+        if obj.naomi_param.colType == '2':
+            for j in range(i + 1, len(mesh_objects)):
+                next_obj = mesh_objects[j]
+                if next_obj.naomi_param.colType not in ['2', '3']:
+                    break
+                if parameters_match(current_params, get_material_parameters(next_obj)):
+                    next_obj.naomi_param.colType = '3'
+                else:
+                    break
+            previous_params = current_params
+
+
+# -------------------------
 # Binary writes
 # -------------------------
 
@@ -112,7 +190,7 @@ def get_vertex_colors(obj):
 # -------------------------
 
 def get_vertex_uvs(obj):
-    """Extract UV coordinates for each vertex from the active UV map"""
+    # extract UV coordinates for each vertex from the active UV map
     original_mode = bpy.context.object.mode if bpy.context.object else 'OBJECT'
     was_active = bpy.context.view_layer.objects.active
     bpy.context.view_layer.objects.active = obj
@@ -254,9 +332,10 @@ def recalc_centroids(collection, recalc_individual=True, recalc_collection=True)
                 centroid = (minc + maxc) / 2
                 radius = float(np.sqrt(((verts - centroid) ** 2).sum(1).max()))
                 if hasattr(obj, "naomi_param"):
-                    obj.naomi_param.centroid_x, obj.naomi_param.centroid_y, obj.naomi_param.centroid_z = map(float, centroid)
+                    obj.naomi_param.centroid_x, obj.naomi_param.centroid_y, obj.naomi_param.centroid_z = map(float,
+                                                                                                             centroid)
                     obj.naomi_param.bound_radius = radius
-                    # print(f"Updated '{obj.name}': centroid=({centroid[0]:.6f},{centroid[1]:.6f},{centroid[2]:.6f}), r={radius:.6f}")
+                    print(f"Updated '{obj.name}': centroid=({centroid[0]:.6f},{centroid[1]:.6f},{centroid[2]:.6f}), r={radius:.6f}")
                 else:
                     print(f"Warning: {obj.name} has no naomi_param")
 
@@ -271,8 +350,8 @@ def recalc_centroids(collection, recalc_individual=True, recalc_collection=True)
             if not coll_vertices:
                 if hasattr(collection, "naomi_centroidData"):
                     collection.naomi_centroidData.centroid_x = \
-                    collection.naomi_centroidData.centroid_y = \
-                    collection.naomi_centroidData.centroid_z = 0.0
+                        collection.naomi_centroidData.centroid_y = \
+                        collection.naomi_centroidData.centroid_z = 0.0
                     collection.naomi_centroidData.collection_bound_radius = 0.0
                 print("No valid vertices for collection centroid.")
             else:
@@ -281,25 +360,27 @@ def recalc_centroids(collection, recalc_individual=True, recalc_collection=True)
                 centroid = (minc + maxc) / 2
                 radius = float(np.sqrt(((allv - centroid) ** 2).sum(1).max()))
                 if hasattr(collection, "naomi_centroidData"):
-                    collection.naomi_centroidData.centroid_x, collection.naomi_centroidData.centroid_y, collection.naomi_centroidData.centroid_z = map(float, centroid)
+                    collection.naomi_centroidData.centroid_x, collection.naomi_centroidData.centroid_y, collection.naomi_centroidData.centroid_z = map(
+                        float, centroid)
                     collection.naomi_centroidData.collection_bound_radius = radius
-                    # print(f"Updated collection '{collection.name}': centroid=({centroid[0]:.6f},{centroid[1]:.6f},{centroid[2]:.6f}), r={radius:.6f}")
+                    print(f"Updated collection '{collection.name}': centroid=({centroid[0]:.6f},{centroid[1]:.6f},{centroid[2]:.6f}), r={radius:.6f}")
 
     finally:
         for o in ctx.selected_objects: o.select_set(False)
         for o in orig_selected: o.select_set(True)
         ctx.view_layer.objects.active = orig_active
         if orig_active and orig_mode != 'OBJECT':
-            try: bpy.ops.object.mode_set(mode=orig_mode)
-            except: pass
+            try:
+                bpy.ops.object.mode_set(mode=orig_mode)
+            except:
+                pass
 
 
 # ---------------------------
 # NL file update (NO REMESH!)
 # ---------------------------
 
-def update_naomi_bin(filepath, collection):
-
+def update_naomi_bin(filepath, collection, update_centroids=False):
     if not collection.naomi_import_meta.source_filepath:
         raise ValueError("No import metadata found. Collection was not imported from NaomiLib file.")
 
@@ -324,8 +405,11 @@ def update_naomi_bin(filepath, collection):
     mesh_data_update(collection)
     bpy.context.view_layer.update()
 
-    recalc_centroids(collection)
+    if update_centroids:
+        recalc_centroids(collection)
 
+    mesh_objects = [obj for obj in collection.objects if obj.type == 'MESH']
+    adjust_color_type_intensity(mesh_objects)
 
     # -----------------------------
     # Write GP0/GP1 and centroid info
@@ -341,7 +425,7 @@ def update_naomi_bin(filepath, collection):
     if gp1.bumpMap: gflag1 |= (1 << 4)
     file_data[0x4:0x6] = struct.pack('<H', gflag1)
 
-    # Write updated collection centroid & radius
+    # write updated collection centroid & radius
     centroid = (
         collection.naomi_centroidData.centroid_x,
         collection.naomi_centroidData.centroid_y,
@@ -353,7 +437,6 @@ def update_naomi_bin(filepath, collection):
     write_float_at(file_data, 0x10, rev_centroid[2])
     write_float_at(file_data, 0x14, collection.naomi_centroidData.collection_bound_radius)
 
-    mesh_objects = [obj for obj in collection.objects if obj.type == 'MESH']
     current_pos = 0x18
     mesh_index = 0
 
@@ -391,6 +474,8 @@ def update_naomi_bin(filepath, collection):
         current_pos += 4
 
         bc = p.meshColor
+
+        # print(current_obj, 'Mesh_color', hex(current_pos), bc[3], bc[0], bc[1], bc[2])
         write_float_at(file_data, current_pos, bc[3])
         write_float_at(file_data, current_pos + 4, bc[0])
         write_float_at(file_data, current_pos + 8, bc[1])
@@ -411,7 +496,7 @@ def update_naomi_bin(filepath, collection):
         vertex_positions = [v.co for v in current_mesh.vertices]
         vertex_index = 0
 
-        # Get vertex colors and UV data
+        # get vertex colors and UV data
         vertex_colors_data = {}
         vertex_uv_data = {}
 
@@ -434,6 +519,7 @@ def update_naomi_bin(filepath, collection):
 
                 vertex_value = struct.unpack_from("<I", file_data, current_pos)[0]
 
+                # skip Type B
                 if 0x5FF00000 <= vertex_value <= 0x5FFFFFFF:
                     current_pos += 8
                 else:
@@ -441,20 +527,20 @@ def update_naomi_bin(filepath, collection):
                         co = vertex_positions[vertex_index]
                         rev_pos = reverse_axis_transformation(co, orientation, neg_scale_x)
 
-                        # Write position data
+                        # write position data
                         write_float_x_aligned(file_data, current_pos, rev_pos[0])
                         write_float_at(file_data, current_pos + 4, rev_pos[1])
                         write_float_at(file_data, current_pos + 8, rev_pos[2])
                         current_pos += 12
 
-                        # Handle different vertex types based on m_tex_shading
+                        # vertex types based on m_tex_shading
                         tex_shading = getattr(current_obj.naomi_param, 'm_tex_shading', 0)
 
                         if tex_shading == -3:  # Type C
-                            # Skip normal data (3 bytes + 1 padding byte)
+                            # skip normal data (3 bytes + 1 padding byte)
                             current_pos += 4
 
-                            # Write vertex colors
+                            # write vertex colors
                             if vertex_colors_data and vertex_index in vertex_colors_data:
                                 color_data = vertex_colors_data[vertex_index]
                                 b = int(max(0, min(255, color_data[2] * 255)))
@@ -465,37 +551,55 @@ def update_naomi_bin(filepath, collection):
                                     write_uint8_at(file_data, current_pos + i, val)
                             current_pos += 8
 
-                            # Write UV data
-                            if vertex_index in vertex_uv_data:
-                                u, v = vertex_uv_data[vertex_index]
-                                write_float_at(file_data, current_pos, u)
-                                write_float_at(file_data, current_pos + 4, v)
+                            # write UV data - check for texture ID
+                            if p.mh_texID == -1:
+                                # dummy values: U=0 (as uint), V=1 (as uint)
+                                write_uint32_at(file_data, current_pos, 0)
+                                write_uint32_at(file_data, current_pos + 4, 1)
+                            else:
+                                # write UV data floats
+                                if vertex_index in vertex_uv_data:
+                                    u, v = vertex_uv_data[vertex_index]
+                                    write_float_at(file_data, current_pos, u)
+                                    write_float_at(file_data, current_pos + 4, v)
                             current_pos += 8
 
                         elif tex_shading == -2:  # Type D
-                            # Skip normal data (3 bytes + 1 padding)
+                            # skip normal data (3 bytes + 1 padding)
                             current_pos += 4
-                            # Skip bump0 normal data (3 bytes + 1 padding)
+                            # skip bump0 normal data (3 bytes + 1 padding)
                             current_pos += 4
-                            # Skip bump1 normal data (3 bytes + 1 padding)
+                            # skip bump1 normal data (3 bytes + 1 padding)
                             current_pos += 4
 
-                            # Write UV data
-                            if vertex_index in vertex_uv_data:
-                                u, v = vertex_uv_data[vertex_index]
-                                write_float_at(file_data, current_pos, u)
-                                write_float_at(file_data, current_pos + 4, v)
+                            # write UV data - check for texture ID
+                            if p.mh_texID == -1:
+                                # write dummy values: U=0 (as uint), V=1 (as uint)
+                                write_uint32_at(file_data, current_pos, 0)
+                                write_uint32_at(file_data, current_pos + 4, 1)
+                            else:
+                                # write actual UV data floats
+                                if vertex_index in vertex_uv_data:
+                                    u, v = vertex_uv_data[vertex_index]
+                                    write_float_at(file_data, current_pos, u)
+                                    write_float_at(file_data, current_pos + 4, v)
                             current_pos += 8
 
                         else:  # Type A (regular)
-                            # Skip normal data (12 bytes for 3 floats)
+                            # skip normal data (12 bytes for 3 floats)
                             current_pos += 12
 
-                            # Write UV data
-                            if vertex_index in vertex_uv_data:
-                                u, v = vertex_uv_data[vertex_index]
-                                write_float_at(file_data, current_pos, u)
-                                write_float_at(file_data, current_pos + 4, v)
+                            # write UV data - check for texture ID
+                            if p.mh_texID == -1:
+                                # write dummy values: U=0 (as uint), V=1 (as uint)
+                                write_uint32_at(file_data, current_pos, 0)
+                                write_uint32_at(file_data, current_pos + 4, 1)
+                            else:
+                                # write UV data floats
+                                if vertex_index in vertex_uv_data:
+                                    u, v = vertex_uv_data[vertex_index]
+                                    write_float_at(file_data, current_pos, u)
+                                    write_float_at(file_data, current_pos + 4, v)
                             current_pos += 8
 
                         vertex_index += 1
