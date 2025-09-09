@@ -211,7 +211,7 @@ class COL_PT_collection_gps(bpy.types.Panel):
         row = box.row()
         row.prop(gp_1, "pltTex")
         row.prop(gp_1, "bumpMap")
-    
+
         # Draw Centroid parameters
         layout.label(text= "OBJ Centroid Data")
         naomi_centroidData_p = active.naomi_centroidData
@@ -275,12 +275,10 @@ def update_mesh_ambient(self, context):
         emission_strength_input.default_value = ambient_factor
 
 
-
 def update_mesh_color(self, context):
-
     obj = getattr(bpy.context, "active_object", None)
     if obj is None:
-        return  # Nothing to update
+        return
 
     if not obj.material_slots:
         return
@@ -289,22 +287,26 @@ def update_mesh_color(self, context):
     if not (material and material.use_nodes and material.node_tree):
         return
 
+    # Update Principled BSDF Base Color
     principled_node = next(
         (node for node in material.node_tree.nodes if node.type == 'BSDF_PRINCIPLED'),
         None
     )
-    if principled_node is None:
-        return
+    if principled_node:
+        principled_node.inputs['Base Color'].default_value = self.meshColor
 
-    # Update the base color of the Principled BSDF shader
-    principled_node.inputs['Base Color'].default_value = self.meshColor
+    if hasattr(obj, "color") and len(obj.color) >= 4:
+        obj.color = self.meshColor  # RGBA
+        # also enable 'Use Object Color' in viewport display
+        if material:
+            material.diffuse_color = self.meshColor
 
 
 def update_mesh_offsetcolor(self, context):
 
     obj = getattr(bpy.context, "active_object", None)
     if obj is None:
-        return  # Nothing to update
+        return
 
     if not obj.material_slots:
         return
@@ -1024,15 +1026,9 @@ class ExportNaomiBin(bpy.types.Operator, ExportHelper):
 
     def execute(self, context):
         try:
+            active_layer_collection = context.view_layer.active_layer_collection
 
             if self.update_mode:
-                active_layer_collection = context.view_layer.active_layer_collection
-
-                if self.recalculate_centroid:
-                    selected_collection = active_layer_collection.collection
-                    NLe.recalc_individual_mesh_centroids(selected_collection)
-                    NLe.recalc_collection_centroid_and_radius(selected_collection)
-
 
                 # No collection selected
                 if not active_layer_collection:
@@ -1056,7 +1052,6 @@ class ExportNaomiBin(bpy.types.Operator, ExportHelper):
                                 selected_collection = collection
                                 break
                         else:
-                            # No valid collection found
                             def draw(self, context):
                                 self.layout.label(text="Cannot determine target collection.")
                                 self.layout.label(text="Please select a specific imported")
@@ -1085,13 +1080,15 @@ class ExportNaomiBin(bpy.types.Operator, ExportHelper):
                     bpy.context.window_manager.popup_menu(draw, title="Invalid Collection", icon='ERROR')
                     return {'CANCELLED'}
 
-                NLe.update_naomi_bin(self.filepath, selected_collection)
+                # Update Naomi bin, pass recalc flag
+                NLe.update_naomi_bin(self.filepath, selected_collection, update_centroids=self.recalculate_centroid)
 
                 # Update the CRC in memory if successful export
                 selected_collection.naomi_import_meta.source_crc32 = NLe.calculate_crc32(self.filepath)
 
                 self.report({'INFO'},
                             f"Successfully updated {self.filepath} using collection '{selected_collection.name}'")
+
             else:
                 # Complete Remesh - PLACEHOLDER! -
                 obj = bpy.context.object
