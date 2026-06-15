@@ -1,96 +1,154 @@
-# Blender NaomiLib importer Addon
+# Blender NaomiLib Addon
 
-NaomiLib is a graphic format developed by AM2 division, extensively used by SEGA between 1999-2001 in SEGA Naomi arcade hardware and SEGA Dreamcast.
-Currently there are two known NaomiLib versions: NLOBJPUT Ver.0.99 and 0.8
+NaomiLib is a 3D graphics format developed by AM2, extensively used by SEGA between 1999–2001 on SEGA Naomi arcade hardware and SEGA Dreamcast.
+There are two known NaomiLib versions: **NLOBJPUT Ver.0.99** and **0.8**.
 
-Check out our Wiki if you're looking for [model format](https://github.com/NaomiMod/NL-ModelFormat/wiki)!
+Check out the Wiki for the [model format reference](https://github.com/NaomiMod/NL-ModelFormat/wiki).
 
-NaomiLib format has been researched by VincentNL for the initial purpose of creating custom 3D models in Virtua Tennis (Virtua Merdaio). Upon completing the model structure research, Vincent eventually met TheZocker on Blender Script Discord channel and thanks to TheZocker immense Blender & Python coding skills, their cooperation eventually led to the present addon.
-The release version is able to open 3D models in NL format and variation used by Super Monkey Ball on Gamecube.
+NaomiLib was researched by VincentNL for the purpose of creating custom 3D models in Virtua Tennis. Upon completing the format research, VincentNL met TheZocker on the Blender Script Discord channel and their cooperation led to this addon. 
+Thanks to the fantastic release of Naomi SDK by CyoTheVile, the few rmaining bits were finally completed!
 
-# Features
+It can open 3D models in NL format and the variation used by Super Monkey Ball on GameCube.
 
-- Loads 3D models with original texture U/V
+---
 
-Import function has several options:
+## Supported Blender versions
 
-1. Load Directory, to load all models in the same folder.
-1. Clean scene (Clean up the current scene before import)
-2. Scale factor (Especially useful to reduce Super / Monkey Balls huge 3D backgrounds)
-3. Lz_p (3D model containers used by Super Monkey Ball on GameCube) Limited support
-4. Orientation (Z-Up / -X Default)
-5. Debugging
+- Blender 5.x
+- Blender 4.x
 
-![alt text](https://i.imgur.com/jhBy5ax.png)
+---
 
-# Contacts / Bug Reports:
+## Features
 
-This addon is currently in WIP status, new features and games will be added to the list as we gather new data.
+### Importer
 
-Before reporting an issue please check this out:
+Imports `.bin` and `.lz_p` NaomiLib files (File → Import → NaomiLib).
 
-1. Please note, if you want to load all models in a folder remember to tick "Load Directory" option before import.
-2. Textures are loaded automatcally (.png/.tga), if they are placed in a `Textures` folder in the same directory where model is stored.
-3. If you want to swap a texture on a model, change TextureID in Naomi Parameters box.
-4. You cannot export models in NL format (yet).
-5. We do not distribute any game model / textures. You will have to legally dump your own games and extract files from it. Specific extractors are provided on a dedicate [Game Extraction Tools](https://github.com/NaomiMod/games-ExtractTools) section.
-If you want to help us out in finding new games supporting NL, find any bug or errors in loading models, please reach me out on Discord: **Vincent#5259
+Options:
 
-# Disclaimer
+- **Scale** — uniform scale applied on import
+- **Forward / Up axis** — configurable axis orientation (`-Y` forward / `+Z` up by default, matching standard NaomiLib export)
+- **Import directory** — import every `.bin` / `.lz_p` file in the selected folder at once
+- **Multi-file select** — select several individual files in the browser
+- **Clear scene** — remove all objects and collections before import
+- **Weld vertices** — merge strip-boundary duplicate vertices (forces normal recalculation)
+- **Import normals** — store hardware normals from the binary; when off, Blender recalculates them
+- **Debug output** — print strip and vertex info to the log
 
-This project is intended exclusively for educational purposes and has no affiliation with SEGA or any other third party developer. NaomiLib format, NLOBJPUT and games using it are exlusive property of SEGA. Blender NaomiLib importer Addon is a recreative project, no compensation has been offered for research and will not be accepted in any form.
+Each imported collection stores the source file path and a CRC32 checksum, enabling the **Update Model File** feature.
 
-## Supported games
+---
 
-| Game                                       | Device                  |
-| ------------------------------------------ | ----------------------- |
-| 18 Wheeler: American Pro Trucker           | SEGA DREAMCAST          |
-| Cannon Spike                               | SEGA DREAMCAST          |
-| Cosmic Smash                               | SEGA DREAMCAST          |
-| Crazy Taxi                                 | SEGA DREAMCAST          |
-| Crazy Taxi 2                               | SEGA DREAMCAST          |
-| Daytona USA 2001                           | SEGA DREAMCAST          |
-| Dead or Alive 2                            | SEGA DREAMCAST          |
-| Dead or Alive 2 - Prototype (27 JAN 2000)  | SEGA DREAMCAST          |
-| Ferrari F355 Challenge                     | SEGA DREAMCAST          |
-| Fighting Vipers 2                          | SEGA DREAMCAST          |
-| Giant Gram 2000: All-Japan Pro Wrestling 2 | SEGA DREAMCAST          |
-| Giant Gram 2000: All-Japan Pro Wrestling 3 | SEGA DREAMCAST          |
-| House of The Dead 2                        | SEGA DREAMCAST          |
-| Outtrigger                                 | SEGA DREAMCAST          |
-| Power Stone 2                              | SEGA DREAMCAST          |
-| Shenmue 2                                  | SEGA DREAMCAST          |
-| Sports Jam                                 | SEGA DREAMCAST          |
-| Virtua Fighter 3tb                         | SEGA DREAMCAST          |
-| Virtua Tennis / Power Smash                | SEGA DREAMCAST          |
-| Virtua Tennis 2 / Power Smash 2            | SEGA DREAMCAST          |
-| Cannon Spike                               | ARCADE NAOMI            |
-| Mobile Suit Gundam: Federation vs. Zeon    | ARCADE NAOMI            |
-| House of The Dead 2                        | ARCADE NAOMI            |
-| Outtrigger                                 | ARCADE NAOMI            |
-| Project Justice                            | ARCADE NAOMI            |
-| Spikers Battle                             | ARCADE NAOMI - GDS-0005 |
-| Monkey Ball                                | ARCADE NAOMI - GDS-0008 |
-| Ninja Assault                              | ARCADE NAOMI            |
-| SEGA Marine Fishing                        | ARCADE NAOMI            |
-| SPAWN - In The Demon's Hand                | ARCADE NAOMI            |
-| The Typing of the Dead                     | ARCADE NAOMI            |
-| World Kicks                                | ARCADE NAOMI            |
-| Virtua Tennis / Power Smash                | ARCADE NAOMI - GDS-0011 |
-| Zero Gunner 2                              | ARCADE NAOMI            |
-| Zombie Revenge                             | ARCADE NAOMI            |
-| Marvel Vs Capcom 2                         | ARCADE NAOMI            |
-| Capcom Vs Snk 2                            | ARCADE NAOMI            |
+### Exporter
 
+Exports collections to `.bin` NaomiLib format (File → Export → NaomiLib).
 
-## How to install
+Options:
 
-- download latest release from the [release](https://github.com/zocker-160/blender-NaomiLib/releases) page
-- install zip as addon in Blender in the preferences
+**Presets** — save, load, and delete named export configurations. Presets cover all settings below so you can switch between game targets in one click.
+
+**General**
+
+- **Index** — Auto (uses Global Parameters 0), Super, or Beta index format
+- **Search level** — strip-search quality from 0 (fastest) to 4 (deepest)
+- **Rebuild script** — run a custom script from the `rebuild_scripts/` folder after export (e.g. to repack an AFS archive)
+
+**Geometry**
+
+- **Forward / Up axis** — axis remapping on export (matches importer defaults)
+- **Scale** — uniform output scale
+- **Optimize Geometry** — merge duplicate vertices, triangulate, and fix non-manifold edges in memory; the source mesh is never modified
+
+**Polygons**
+
+- **No Independent Triangles** — suppress triangle tables
+- **All Triangles** — force triangle output
+- **Split Polygons** — triangulate n-gons
+- **Adjust UV** — shrink oversized UV values
+
+**Texture**
+
+- **Encode PVRs** — encode all Texture Manager images to `.PVR` before export using their assigned format; skips textures whose pixel data already matches the existing `.PVR` on disk
+- **Merge (model)** — merge identical materials across the model
+- **Merge (nearby)** — merge materials on nearby geometry
+
+**Advanced**
+
+- **Export All** — export every NaomiLib collection in the scene to a folder, one `.bin` per collection
+- **Naomi2** — output in NAOMI2 (NL2) format
+
+---
+
+### Update Model File
+
+**Update Model File** writes your mesh edits back to the original imported `.bin` without re-running the exporter dialog.
+
+The button appears in the **Collection Properties → Naomi Global Parameters** panel whenever the active collection was imported via the NaomiLib importer. It shows the source filename and a **Recalculate Centroid** toggle.
+
+Clicking it overwrites the original file in place and refreshes the stored CRC32. This is the fastest way to iterate on geometry — import once, edit, update, done.
+
+---
+
+### Texture Manager
+
+The Texture Manager panel (available on the active object in the N-panel or Properties) manages the texture set for a NaomiLib collection.
+
+- **UIList** with thumbnail previews, Texture ID, format (`TexFmt` / `PixFmt`), and mipmap toggle per slot
+- **Add Texture** — add one or more image files at once (multi-select supported)
+- **Replace Image** — swap the image for an existing slot
+- **Delete Image** — remove a slot and its companion `.PVR` / `.PVP` files
+- **Encode PVR** — encode all images to `.PVR` immediately using per-slot format settings
+- **Change Image Folder** — relocate the texture folder
+- **Refresh** — rescan the folder and rebuild the list, re-reading `.PVR` headers to restore format settings automatically
+- **Drag-scroll** — click-and-drag to scroll the list on large texture sets
+
+Format settings (`TexFmt` / `PixFmt`) are read automatically from existing `.PVR` headers on refresh; when no `.PVR` is present the best format is inferred from the image content.
+
+---
+
+### Material Presets (Naomi Properties panel)
+
+One-click material setup buttons assign the correct Blender shader nodes and Naomi TSP flags for each hardware rendering mode:
+
+| Preset | Description |
+| --- | --- |
+| **Lambert** | Standard diffuse with texture |
+| **Flat** | Flat-shaded, no lighting |
+| **Vertex Colors** | Per-vertex color (no texture) |
+| **Env Map** | Environment / reflection mapping (`nlObjPutCheapEnvMap`) |
+| **Palette** | 4-BPP or 8-BPP indexed palette texture |
+| **Bump Map** | Two-pass bump/normal map |
+
+Each preset sets correct default blend modes (SRC / DST alpha), texture alpha, fog, color clamp, UV clamping, and filter mode. Individual TSP fields can be overridden per-object via the **Naomi Properties** panel.
+
+Additional per-object actions:
+
+- **Copy / Paste Naomi Properties** — transfer all TSP settings between objects
+- **Export / Import Naomi Object Props (.json)** — save and load per-object settings to disk
+- **Set Partner Mesh** — link a second mesh for two-pass effects (bump map, transparency pairs)
+- **Set / Reset Palette ID** — assign the palette file index (`PalID_XXX`)
+- **Apply Selected Texture ID** — push the active Texture Manager slot ID to the selected object
+
+---
+
+### Global Parameters (Collection Properties)
+
+Each collection stores **Global Parameters 0** and **Global Parameters 1**, controlling index format and rendering flags (environment map, palette texture, bump map) at the collection level. The panel also displays the **OBJ Centroid Data** (X / Y / Z / bound radius), which is recalculated automatically on export when **Recalculate Centroid** is enabled.
+
+---
+
+## Installation
+
+1. Download the latest release from the [Releases](https://github.com/NaomiMod/blender-NaomiLib/releases) page.
+2. In Blender go to **Edit → Preferences → Add-ons → Install** and select the downloaded `.zip`.
+3. Enable the addon.
+
+Textures are loaded automatically from a `Textures/` subfolder placed alongside the `.bin` file (`.png` and `.tga` supported).
+
+---
 
 ## How to build
-
-If you want to build the Blender package on your own, run following commands:
 
 ```bash
 git clone https://github.com/zocker-160/blender-NaomiLib.git
@@ -98,14 +156,74 @@ cd blender-NaomiLib
 make
 ```
 
-Install the addon into Blender using the created zip package
+Install the resulting `.zip` package via Blender Preferences.
 
-## Supported Blender versions:
+---
 
-- Blender 3.4.1
-- Blender 2.83 LTS
+## Supported games
 
+| Game | Device |
+| --- | --- |
+| 18 Wheeler: American Pro Trucker | SEGA DREAMCAST |
+| Cannon Spike | SEGA DREAMCAST |
+| Cosmic Smash | SEGA DREAMCAST |
+| Crazy Taxi | SEGA DREAMCAST |
+| Crazy Taxi 2 | SEGA DREAMCAST |
+| Daytona USA 2001 | SEGA DREAMCAST |
+| Dead or Alive 2 | SEGA DREAMCAST |
+| Dead or Alive 2 - Prototype (27 JAN 2000) | SEGA DREAMCAST |
+| Ferrari F355 Challenge | SEGA DREAMCAST |
+| Fighting Vipers 2 | SEGA DREAMCAST |
+| Giant Gram 2000: All-Japan Pro Wrestling 2 | SEGA DREAMCAST |
+| Giant Gram 2000: All-Japan Pro Wrestling 3 | SEGA DREAMCAST |
+| House of The Dead 2 | SEGA DREAMCAST |
+| Outtrigger | SEGA DREAMCAST |
+| Power Stone 2 | SEGA DREAMCAST |
+| Shenmue 2 | SEGA DREAMCAST |
+| Sports Jam | SEGA DREAMCAST |
+| Virtua Fighter 3tb | SEGA DREAMCAST |
+| Virtua Tennis / Power Smash | SEGA DREAMCAST |
+| Virtua Tennis 2 / Power Smash 2 | SEGA DREAMCAST |
+| Cannon Spike | ARCADE NAOMI |
+| Mobile Suit Gundam: Federation vs. Zeon | ARCADE NAOMI |
+| House of The Dead 2 | ARCADE NAOMI |
+| Outtrigger | ARCADE NAOMI |
+| Project Justice | ARCADE NAOMI |
+| Spikers Battle | ARCADE NAOMI - GDS-0005 |
+| Monkey Ball | ARCADE NAOMI - GDS-0008 |
+| Ninja Assault | ARCADE NAOMI |
+| SEGA Marine Fishing | ARCADE NAOMI |
+| SPAWN - In The Demon's Hand | ARCADE NAOMI |
+| The Typing of the Dead | ARCADE NAOMI |
+| World Kicks | ARCADE NAOMI |
+| Virtua Tennis / Power Smash | ARCADE NAOMI - GDS-0011 |
+| Zero Gunner 2 | ARCADE NAOMI |
+| Zombie Revenge | ARCADE NAOMI |
+| Marvel Vs Capcom 2 | ARCADE NAOMI |
+| Capcom Vs Snk 2 | ARCADE NAOMI |
+| Super Monkey Ball | GAMECUBE |
 
-## Special Thanks to:
+---
 
-- Deo , Kobainkurt , Lenders18 , Melfice , TheBosZ, Merdaio
+## Bug reports & contacts
+
+This addon is in active development. Before reporting an issue:
+
+1. To load all models in a folder, tick **Import directory** before importing.
+2. Textures are auto-loaded from a `Textures/` folder next to the model file.
+3. To swap a texture on a model, change the Texture ID in the Naomi Properties panel or use the Texture Manager.
+4. We do not distribute game models or textures. You must legally dump your own games and extract files yourself. Extractors are provided in the [Game Extraction Tools](https://github.com/NaomiMod/games-ExtractTools) repository.
+
+Discord: **Vincent#5259**
+
+---
+
+## Disclaimer
+
+This project is intended exclusively for educational purposes and has no affiliation with SEGA or any other third-party developer. NaomiLib, NLOBJPUT, and all games using them are the exclusive property of SEGA. This addon is a recreational project; no compensation has been offered for the research and none will be accepted in any form.
+
+---
+
+## Special thanks
+
+Deo, Kobainkurt, Lenders18, Melfice, TheBosZ, Merdaio
