@@ -4,7 +4,7 @@ Naomi Library is a 3D graphics format developed by AM2, extensively used by SEGA
 
 Check out the Wiki for the [model format reference](https://github.com/NaomiMod/NL-ModelFormat/wiki).
 
-Naomi Library was initially reverse engineered by VincentNL while modding Virtua Tennis. The first importer was developed by TheZocker, whom VincentNL met on the Blender Script Discord, with TVIndustries joining the team shortly after.
+Naomi Library was initially reverse engineered by VincentNL while modding Virtua Tennis. The first importer was developed by TheZocker, with TVIndustries joining the team shortly after.
 
 Research by Egregiousguy, MetalliC, and CyoTheVile's Naomi SDK release — which included Naomi 2 model format data — completed the picture and made the exporter possible. The addon supports NL/NL2 import and export, plus the variant used by Super Monkey Ball on GameCube.
 
