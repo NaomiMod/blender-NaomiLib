@@ -4,9 +4,11 @@ Naomi Library is a 3D graphics format developed by AM2, extensively used by SEGA
 
 Check out the Wiki for the [model format reference](https://github.com/NaomiMod/NL-ModelFormat/wiki).
 
-Naomi Library was initially reverse engineered by VincentNL while modding Virtua Tennis. The first importer was developed by TheZocker, with TVIndustries joining the team shortly after.
+Naomi Library was initially reverse engineered by VincentNL while modding Virtua Tennis. The first importer was developed by TheZocker, whom VincentNL met on the Blender Script Discord, with TVIndustries joining the team shortly after.
 
 Research by Egregiousguy, MetalliC, and CyoTheVile's Naomi SDK release — which included Naomi 2 model format data — completed the picture and made the exporter possible. The addon supports NL/NL2 import and export, plus the variant used by Super Monkey Ball on GameCube.
+
+<img width="1269" height="999" alt="image" src="https://github.com/user-attachments/assets/ec2f1e86-1389-47c6-bf0f-299e39cf1f6c" />
 
 ---
 
@@ -164,6 +166,8 @@ Install the resulting `.zip` package via Blender Preferences.
 | --- | --- |
 | 18 Wheeler: American Pro Trucker | SEGA DREAMCAST |
 | Cannon Spike | SEGA DREAMCAST |
+| Cannon Spike | NAOMI |
+| Capcom Vs Snk 2 | NAOMI |
 | Cosmic Smash | SEGA DREAMCAST |
 | Crazy Taxi | SEGA DREAMCAST |
 | Crazy Taxi 2 | SEGA DREAMCAST |
@@ -175,32 +179,30 @@ Install the resulting `.zip` package via Blender Preferences.
 | Giant Gram 2000: All-Japan Pro Wrestling 2 | SEGA DREAMCAST |
 | Giant Gram 2000: All-Japan Pro Wrestling 3 | SEGA DREAMCAST |
 | House of The Dead 2 | SEGA DREAMCAST |
+| House of The Dead 2 | NAOMI |
+| Initial D3 | NAOMI 2 |
+| Marvel Vs Capcom 2 | NAOMI |
+| Mobile Suit Gundam: Federation vs. Zeon | NAOMI |
+| Monkey Ball | NAOMI |
+| Ninja Assault | NAOMI |
 | Outtrigger | SEGA DREAMCAST |
+| Outtrigger | NAOMI |
 | Power Stone 2 | SEGA DREAMCAST |
+| Project Justice | NAOMI |
+| SEGA Marine Fishing | NAOMI |
 | Shenmue 2 | SEGA DREAMCAST |
+| SPAWN - In The Demon's Hand | NAOMI |
+| Spikers Battle | NAOMI |
 | Sports Jam | SEGA DREAMCAST |
+| Super Monkey Ball | GAMECUBE |
+| The Typing of the Dead | NAOMI |
 | Virtua Fighter 3tb | SEGA DREAMCAST |
 | Virtua Tennis / Power Smash | SEGA DREAMCAST |
+| Virtua Tennis / Power Smash | NAOMI |
 | Virtua Tennis 2 / Power Smash 2 | SEGA DREAMCAST |
-| Cannon Spike | ARCADE NAOMI |
-| Mobile Suit Gundam: Federation vs. Zeon | ARCADE NAOMI |
-| House of The Dead 2 | ARCADE NAOMI |
-| Outtrigger | ARCADE NAOMI |
-| Project Justice | ARCADE NAOMI |
-| Spikers Battle | ARCADE NAOMI - GDS-0005 |
-| Monkey Ball | ARCADE NAOMI - GDS-0008 |
-| Ninja Assault | ARCADE NAOMI |
-| SEGA Marine Fishing | ARCADE NAOMI |
-| SPAWN - In The Demon's Hand | ARCADE NAOMI |
-| The Typing of the Dead | ARCADE NAOMI |
-| World Kicks | ARCADE NAOMI |
-| Virtua Tennis / Power Smash | ARCADE NAOMI - GDS-0011 |
-| Zero Gunner 2 | ARCADE NAOMI |
-| Zombie Revenge | ARCADE NAOMI |
-| Marvel Vs Capcom 2 | ARCADE NAOMI |
-| Capcom Vs Snk 2 | ARCADE NAOMI |
-| Super Monkey Ball | GAMECUBE |
-
+| World Kicks | NAOMI |
+| Zero Gunner 2 | NAOMI |
+| Zombie Revenge | NAOMI |
 ---
 
 ## Bug reports & contacts
@@ -226,9 +228,9 @@ This project is intended exclusively for educational purposes and has no affilia
 
 **Support and testing**
 
+- Alexvgz
 - Esppiral
 - LeoBun
-- Alexvgz
 - Rob2d
 
 ## Special thanks
@@ -237,6 +239,6 @@ This project is intended exclusively for educational purposes and has no affilia
 - Kobainkurt
 - Lenders18
 - Melfice
-- TheBosZ
 - Merdaio
+- TheBosZ
 - NaomiMod Discord
