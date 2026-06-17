@@ -1,14 +1,12 @@
 # Blender NaomiLib Addon
 
-NaomiLib is a 3D graphics format developed by AM2, extensively used by SEGA between 1999–2001 on SEGA Naomi arcade hardware and SEGA Dreamcast.
-There are two known NaomiLib versions: **NLOBJPUT Ver.0.99** and **0.8**.
+Naomi Library is a 3D graphics format developed by AM2, extensively used by SEGA between 1999–2001 on SEGA Naomi / Naomi 2 arcade hardware and SEGA Dreamcast. There are two known main versions: **Ver.0.99** and **0.8**.
 
 Check out the Wiki for the [model format reference](https://github.com/NaomiMod/NL-ModelFormat/wiki).
 
-NaomiLib was researched by VincentNL for the purpose of creating custom 3D models in Virtua Tennis. Upon completing the format research, VincentNL met TheZocker on the Blender Script Discord channel and their cooperation led to this addon. 
-Thanks to the fantastic release of Naomi SDK by CyoTheVile, the few rmaining bits were finally completed!
+Naomi Library was initially reverse engineered by VincentNL while modding Virtua Tennis. The first importer was developed by TheZocker, whom VincentNL met on the Blender Script Discord, with TVIndustries joining the team shortly after.
 
-It can open 3D models in NL format and the variation used by Super Monkey Ball on GameCube.
+Research by Egregiousguy, MetalliC, and CyoTheVile's Naomi SDK release — which included Naomi 2 model format data — completed the picture and made the exporter possible. The addon supports NL/NL2 import and export, plus the variant used by Super Monkey Ball on GameCube.
 
 ---
 
@@ -23,7 +21,7 @@ It can open 3D models in NL format and the variation used by Super Monkey Ball o
 
 ### Importer
 
-Imports `.bin` and `.lz_p` NaomiLib files (File → Import → NaomiLib).
+Imports `.bin` and `.lz_p` Naomi Library files (File → Import → NaomiLib).
 
 Options:
 
@@ -42,7 +40,7 @@ Each imported collection stores the source file path and a CRC32 checksum, enabl
 
 ### Exporter
 
-Exports collections to `.bin` NaomiLib format (File → Export → NaomiLib).
+Exports collections to `.bin` Naomi Library format (File → Export → NaomiLib).
 
 Options:
 
@@ -75,7 +73,7 @@ Options:
 
 **Advanced**
 
-- **Export All** — export every NaomiLib collection in the scene to a folder, one `.bin` per collection
+- **Export All** — export every Naomi Library collection in the scene to a folder, one `.bin` per collection
 - **Naomi2** — output in NAOMI2 (NL2) format
 
 ---
@@ -84,15 +82,15 @@ Options:
 
 **Update Model File** writes your mesh edits back to the original imported `.bin` without re-running the exporter dialog.
 
-The button appears in the **Collection Properties → Naomi Global Parameters** panel whenever the active collection was imported via the NaomiLib importer. It shows the source filename and a **Recalculate Centroid** toggle.
+The button appears in the **Collection Properties → Naomi Global Parameters** panel whenever the active collection was imported via the Naomi Library importer. It shows the source filename and a **Recalculate Centroid** toggle.
 
-Clicking it overwrites the original file in place and refreshes the stored CRC32. This is the fastest way to iterate on geometry — import once, edit, update, done.
+Clicking it overwrites the original file in place and refreshes the stored CRC32. Because the update preserves the original model structure without altering geometry counts or topology, it is safe to modify vertex positions and texture assignments on any original model while keeping full game compatibility. Import once, edit, update, done.
 
 ---
 
 ### Texture Manager
 
-The Texture Manager panel (available on the active object in the N-panel or Properties) manages the texture set for a NaomiLib collection.
+The Texture Manager panel (available on the active object in the N-panel or Properties) manages the texture set for a Naomi Library collection.
 
 - **UIList** with thumbnail previews, Texture ID, format (`TexFmt` / `PixFmt`), and mipmap toggle per slot
 - **Add Texture** — add one or more image files at once (multi-select supported)
@@ -220,10 +218,25 @@ Discord: **Vincent#5259**
 
 ## Disclaimer
 
-This project is intended exclusively for educational purposes and has no affiliation with SEGA or any other third-party developer. NaomiLib, NLOBJPUT, and all games using them are the exclusive property of SEGA. This addon is a recreational project; no compensation has been offered for the research and none will be accepted in any form.
+This project is intended exclusively for educational purposes and has no affiliation with SEGA or any other third-party developer. Naomi Library is an exclusive property of SEGA. This addon is a recreational project; no compensation has been offered for the research and none will be accepted in any form.
 
 ---
 
+## Credits
+
+**Support and testing**
+
+- Esppiral
+- LeoBun
+- Alexvgz
+- Rob2d
+
 ## Special thanks
 
-Deo, Kobainkurt, Lenders18, Melfice, TheBosZ, Merdaio
+- Deo
+- Kobainkurt
+- Lenders18
+- Melfice
+- TheBosZ
+- Merdaio
+- NaomiMod Discord
