@@ -193,6 +193,7 @@ Install the resulting `.zip` package via Blender Preferences.
 | Outtrigger | NAOMI |
 | Power Stone 2 | SEGA DREAMCAST |
 | Project Justice | NAOMI |
+| SEGA Driving Simulator | NAOMI 2 |
 | SEGA Marine Fishing | NAOMI |
 | Shenmue 2 | SEGA DREAMCAST |
 | Soul Surf | NAOMI 2 |
