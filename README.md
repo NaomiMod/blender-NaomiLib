@@ -164,6 +164,8 @@ Install the resulting `.zip` package via Blender Preferences.
 
 | Game | Device |
 | --- | --- |
+| Beach Spikers | NAOMI 2 |
+| Beach Spikers | NAOMI 2 |
 | 18 Wheeler: American Pro Trucker | SEGA DREAMCAST |
 | Cannon Spike | SEGA DREAMCAST |
 | Cannon Spike | NAOMI |
@@ -180,7 +182,10 @@ Install the resulting `.zip` package via Blender Preferences.
 | Giant Gram 2000: All-Japan Pro Wrestling 3 | SEGA DREAMCAST |
 | House of The Dead 2 | SEGA DREAMCAST |
 | House of The Dead 2 | NAOMI |
+| Initial D1 | NAOMI 2 |
+| Initial D2 | NAOMI 2 |
 | Initial D3 | NAOMI 2 |
+| KingOfRoute66 | NAOMI 2 |
 | Marvel Vs Capcom 2 | NAOMI |
 | Mobile Suit Gundam: Federation vs. Zeon | NAOMI |
 | Monkey Ball | NAOMI |
@@ -191,15 +196,18 @@ Install the resulting `.zip` package via Blender Preferences.
 | Project Justice | NAOMI |
 | SEGA Marine Fishing | NAOMI |
 | Shenmue 2 | SEGA DREAMCAST |
+| Soul Surf | NAOMI 2 |
 | SPAWN - In The Demon's Hand | NAOMI |
 | Spikers Battle | NAOMI |
 | Sports Jam | SEGA DREAMCAST |
 | Super Monkey Ball | GAMECUBE |
 | The Typing of the Dead | NAOMI |
 | Virtua Fighter 3tb | SEGA DREAMCAST |
+| Virtua Fighter 4 | NAOMI 2 |
 | Virtua Tennis / Power Smash | SEGA DREAMCAST |
 | Virtua Tennis / Power Smash | NAOMI |
 | Virtua Tennis 2 / Power Smash 2 | SEGA DREAMCAST |
+| Wild Riders | NAOMI 2 |
 | World Kicks | NAOMI |
 | Zero Gunner 2 | NAOMI |
 | Zombie Revenge | NAOMI |
