@@ -165,7 +165,6 @@ Install the resulting `.zip` package via Blender Preferences.
 | Game | Device |
 | --- | --- |
 | Beach Spikers | NAOMI 2 |
-| Beach Spikers | NAOMI 2 |
 | 18 Wheeler: American Pro Trucker | SEGA DREAMCAST |
 | Cannon Spike | SEGA DREAMCAST |
 | Cannon Spike | NAOMI |
