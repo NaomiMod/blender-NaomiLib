@@ -3,7 +3,7 @@ bl_info = {
     "author" : "zocker_160, VincentNL, TVIndustries",
     "description" : "Addon for importing / exporting NaomiLib .bin files",
     "blender" : (5, 1, 0),
-    "version" : (1, 0, 1),
+    "version" : (1, 0, 2),
     "location" : "File > Import / Export",
     "warning" : "",
     "category": "Import-Export",
