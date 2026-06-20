@@ -1257,6 +1257,9 @@ def parse_nl2(nl_bytes: bytes, orientation: str, NegScale_X: bool,
             cull_mode = _isp_cul
 
             m_hdr = (l_param, l_isp, l_tsp, l_texctrl, tex_id0, m_tex_shading, 1.0)
+            _isp_tsp_no_cull = pvr_isp_tsp & ~(3 << 27)
+            _merge_key = (cur_gloss, cur_select, cur_d0, cur_s0, cur_tex_id,
+                          pvr_pcw, _isp_tsp_no_cull, pvr_tsp, pvr_texctrl)
 
             if debug:
                 model_log += (
@@ -1446,7 +1449,8 @@ def parse_nl2(nl_bytes: bytes, orientation: str, NegScale_X: bool,
 
                 vtx_base += n
 
-            meshes.append({'face_vertex': faces_vertex, 'face_index': faces_index})
+            meshes.append({'face_vertex': faces_vertex, 'face_index': faces_index,
+                           '_merge_key': _merge_key, '_cull_mode': cull_mode})
             mesh_faces.append(faces_index)
             mesh_colors.append(argb_to_rgba(diffuse0))
             mesh_offcolors.append(argb_to_rgba(specular0))
@@ -1471,6 +1475,86 @@ def parse_nl2(nl_bytes: bytes, orientation: str, NegScale_X: bool,
             m_backface.append(backface)
             if env_flag:
                 m_env.append(len(meshes) - 1)
+
+    _merged_meshes      = []
+    _merged_mesh_faces  = []
+    _merged_mesh_colors = []
+    _merged_mesh_offcolors = []
+    _merged_mesh_vertcol   = []
+    _merged_m_headr_grps   = []
+    _merged_m_centroid     = []
+    _merged_m_backface     = []
+    _merged_m_env          = []
+    _merged_m_two_sided    = []
+
+    for _mi in range(len(meshes)):
+        _key      = meshes[_mi].get('_merge_key')
+        _cull_cur = meshes[_mi].get('_cull_mode', -1)
+
+        _can_merge = False
+        _is_two_sided_merge = False
+
+        if _merged_meshes and _key is not None:
+            _prev_key  = _merged_meshes[-1].get('_merge_key')
+            _prev_cull = _merged_meshes[-1].get('_cull_mode', -1)
+
+            if _key == _prev_key:
+                _can_merge = (_prev_cull == _cull_cur)
+                if not _can_merge and {_prev_cull, _cull_cur} == {2, 3}:
+                    _can_merge = True
+                    _is_two_sided_merge = True
+
+        if _can_merge:
+            _vtx_off = sum(len(fv['point']) for fv in _merged_meshes[-1]['face_vertex'])
+            _merged_meshes[-1]['face_vertex'].extend(meshes[_mi]['face_vertex'])
+            for _fi in meshes[_mi]['face_index']:
+                _merged_meshes[-1]['face_index'].append(
+                    [_fi[0] + _vtx_off, _fi[1] + _vtx_off, _fi[2] + _vtx_off])
+            _merged_mesh_faces[-1] = _merged_meshes[-1]['face_index']
+            if mesh_vertcol[_mi]:
+                if _merged_mesh_vertcol[-1]:
+                    _merged_mesh_vertcol[-1].extend(mesh_vertcol[_mi])
+                else:
+                    _merged_mesh_vertcol[-1] = list(mesh_vertcol[_mi])
+            if _is_two_sided_merge:
+                _merged_m_backface[-1] = False
+                _merged_m_two_sided[-1] = True
+            if debug:
+                _reason = "two-sided cull pair" if _is_two_sided_merge else "strip-topology split"
+                model_log += (
+                    f"NL2 merge ({_reason}): submesh {_mi} folded into merged mesh"
+                    f" {len(_merged_meshes) - 1}  (vtx_off={_vtx_off})\n"
+                )
+        else:
+            _merged_meshes.append({
+                'face_vertex': list(meshes[_mi]['face_vertex']),
+                'face_index':  list(meshes[_mi]['face_index']),
+                '_merge_key':  _key,
+                '_cull_mode':  _cull_cur,
+            })
+            _merged_mesh_faces.append(list(meshes[_mi]['face_index']))
+            _merged_mesh_colors.append(mesh_colors[_mi])
+            _merged_mesh_offcolors.append(mesh_offcolors[_mi])
+            _merged_mesh_vertcol.append(list(mesh_vertcol[_mi]))
+            _merged_m_headr_grps.append(m_headr_grps[_mi])
+            _merged_m_centroid.append(m_centroid[_mi])
+            _merged_m_backface.append(m_backface[_mi])
+            _merged_m_two_sided.append(False)
+            if _mi in m_env:
+                _merged_m_env.append(len(_merged_meshes) - 1)
+
+    _nl2_raw_mesh_count = len(meshes)
+
+    meshes       = _merged_meshes
+    mesh_faces   = _merged_mesh_faces
+    mesh_colors  = _merged_mesh_colors
+    mesh_offcolors = _merged_mesh_offcolors
+    mesh_vertcol = _merged_mesh_vertcol
+    m_headr_grps = _merged_m_headr_grps
+    m_centroid   = _merged_m_centroid
+    m_backface   = _merged_m_backface
+    m_env        = _merged_m_env
+    m_two_sided  = _merged_m_two_sided
 
     # Apply orientation / NegScale_X 
     xVal, yVal, zVal = 0, 1, 2
@@ -1505,12 +1589,12 @@ def parse_nl2(nl_bytes: bytes, orientation: str, NegScale_X: bool,
         mesh_uvs_out.append(textures)
 
     if debug:
-        model_log += f"\nNL2 import: {len(meshes)} mesh(es) parsed.\n"
+        model_log += f"\nNL2 import: {len(meshes)} mesh(es) after merge (from {_nl2_raw_mesh_count} raw PVR blocks).\n"
 
     return (mesh_vertices, mesh_uvs_out, mesh_faces, meshes,
             mesh_colors, mesh_offcolors, mesh_vertcol,
             m_headr_grps, gflag_headers,
-            obj_centroid_header, m_backface, m_env, m_centroid)
+            obj_centroid_header, m_backface, m_env, m_centroid, m_two_sided)
 
 
 def calculate_crc32(filepath):
@@ -1550,7 +1634,8 @@ def find_existing_material(naomi_params_id):
 def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, meshColors: list, meshOffColors: list,
                  vertexColors: list, mesh_headers: list,
                  meshBackface: list, mesh_Centroid: list, parent_col: bpy.types.Collection, scale: float,
-                 p_filepath: str, mesh_Env: list, orientation, NegScale_X: bool, col_index: int = 0, debug=False, weld: bool = False, import_normals: bool = True):
+                 p_filepath: str, mesh_Env: list, orientation, NegScale_X: bool, col_index: int = 0, debug=False, weld: bool = False, import_normals: bool = True,
+                 meshTwoSided: list = None):
     if debug: print("meshes:", len(meshes))
 
     # Bump-mapped surfaces come in pairs: pass1 (base, PIX_BUMP_MAP or shading==-2)
@@ -1842,8 +1927,8 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_object.naomi_param.naomi_flag_bump    = (_pix_fmt == 4 or _tex_shad == -2)
         new_object.naomi_param.naomi_flag_env_map = (i in mesh_Env)
         new_object.naomi_param.naomi_flag_palette = (_pix_fmt in (5, 6))
-        # Low-level RNA to bypass update callback (handles culling + material elsewhere)
-        new_object.naomi_param["naomi_flag_two_sided"] = not meshBackface[i]
+        _is_two_sided = (meshTwoSided[i] if meshTwoSided and i < len(meshTwoSided) else False)
+        new_object.naomi_param["naomi_flag_two_sided"] = _is_two_sided or (not meshBackface[i])
 
         # Mesh header TSP params
         new_object.naomi_tsp.srcAlpha = str(mesh_headers[i][2][0])
@@ -2066,7 +2151,8 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
                 parse_result = parse_nl(NL, orientation, NegScale_X, debug=debug)
             (mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors,
              mesh_vertcol, mesh_header_s, g_headers, obj_centroid_header,
-             m_backface, m_env, m_centroid) = parse_result
+             m_backface, m_env, m_centroid, *_nl2_extra) = parse_result
+            m_two_sided = _nl2_extra[0] if _nl2_extra else [False] * len(meshes)
         except EOFError as e:
             print(f"[NaomiLib] EOF error parsing {filename}: {e}")
             self.report({'ERROR'}, f"File '{filename}' appears truncated or unsupported: {e}")
@@ -2156,7 +2242,8 @@ def main_function_import_file(self, filepath: str, scaling: float, debug: bool, 
                             vertexColors=mesh_vertcol, mesh_headers=mesh_header_s, meshBackface=m_backface,
                             mesh_Env=m_env, mesh_Centroid=m_centroid,
                             parent_col=obj_col, scale=scaling, p_filepath=filepath,
-                            orientation=orientation, NegScale_X=NegScale_X, col_index=col_index, debug=debug, weld=weld, import_normals=import_normals)
+                            orientation=orientation, NegScale_X=NegScale_X, col_index=col_index, debug=debug, weld=weld, import_normals=import_normals,
+                            meshTwoSided=m_two_sided)
 
 
 def main_function_import_archive(self, filepath: str, scaling: float, debug: bool, orientation, NegScale_X: bool, weld: bool = False, import_normals: bool = True, forward_axis: str = '-Y', up_axis: str = '+Z'):
@@ -2224,7 +2311,8 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
                 _parse_result = parse_nl(_nl_bytes, orientation, NegScale_X, debug=debug)
             (mesh_vertex, mesh_uvs, faces, meshes, mesh_colors, mesh_offcolors,
              mesh_vertcol, mesh_header_s, g_headers, obj_centroid_header,
-             m_backface, m_env, m_centroid) = _parse_result
+             m_backface, m_env, m_centroid, *_nl2_extra) = _parse_result
+            m_two_sided = _nl2_extra[0] if _nl2_extra else [False] * len(meshes)
 
             if debug:
                 print(model_log)
@@ -2269,7 +2357,8 @@ def main_function_import_archive(self, filepath: str, scaling: float, debug: boo
                                 mesh_Env=m_env, mesh_Centroid=m_centroid,
                                 parent_col=obj_col, scale=scaling, p_filepath=filepath,
                                 orientation=orientation, NegScale_X=NegScale_X,
-                                col_index=col_index, debug=debug, weld=weld, import_normals=import_normals): return False
+                                col_index=col_index, debug=debug, weld=weld, import_normals=import_normals,
+                                meshTwoSided=m_two_sided): return False
             f.seek(st_p)
             start_offset = end_offset
 
