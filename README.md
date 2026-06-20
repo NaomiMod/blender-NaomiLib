@@ -164,11 +164,14 @@ Install the resulting `.zip` package via Blender Preferences.
 
 | Game | Device |
 | --- | --- |
-| Beach Spikers | NAOMI 2 |
 | 18 Wheeler: American Pro Trucker | SEGA DREAMCAST |
+| Beach Spikers | NAOMI 2 |
 | Cannon Spike | SEGA DREAMCAST |
 | Cannon Spike | NAOMI |
 | Capcom Vs Snk 2 | NAOMI |
+| Club Kart for Cycraft | NAOMI 2 |
+| Club Kart Prize | NAOMI 2 |
+| Club Kart: European Session | NAOMI 2 |
 | Cosmic Smash | SEGA DREAMCAST |
 | Crazy Taxi | SEGA DREAMCAST |
 | Crazy Taxi 2 | SEGA DREAMCAST |
@@ -181,10 +184,10 @@ Install the resulting `.zip` package via Blender Preferences.
 | Giant Gram 2000: All-Japan Pro Wrestling 3 | SEGA DREAMCAST |
 | House of The Dead 2 | SEGA DREAMCAST |
 | House of The Dead 2 | NAOMI |
-| Initial D1 | NAOMI 2 |
-| Initial D2 | NAOMI 2 |
-| Initial D3 | NAOMI 2 |
-| KingOfRoute66 | NAOMI 2 |
+| Initial D Arcade Stage | NAOMI 2 |
+| Initial D Arcade Stage Ver. 2 | NAOMI 2 |
+| Initial D Arcade Stage Ver. 3 | NAOMI 2 |
+| Initial D Arcade Stage Ver. 3 Cycraft Edition | NAOMI 2 |
 | Marvel Vs Capcom 2 | NAOMI |
 | Mobile Suit Gundam: Federation vs. Zeon | NAOMI |
 | Monkey Ball | NAOMI |
@@ -196,14 +199,18 @@ Install the resulting `.zip` package via Blender Preferences.
 | SEGA Driving Simulator | NAOMI 2 |
 | SEGA Marine Fishing | NAOMI |
 | Shenmue 2 | SEGA DREAMCAST |
-| Soul Surf | NAOMI 2 |
+| Soul Surfer | NAOMI 2 |
 | SPAWN - In The Demon's Hand | NAOMI |
 | Spikers Battle | NAOMI |
 | Sports Jam | SEGA DREAMCAST |
 | Super Monkey Ball | GAMECUBE |
+| The King of Route 66 | NAOMI 2 |
 | The Typing of the Dead | NAOMI |
 | Virtua Fighter 3tb | SEGA DREAMCAST |
 | Virtua Fighter 4 | NAOMI 2 |
+| Virtua Fighter 4 Evolution | NAOMI 2 |
+| Virtua Fighter 4 Final Tuned | NAOMI 2 |
+| Virtua Striker 3 | NAOMI 2 |
 | Virtua Tennis / Power Smash | SEGA DREAMCAST |
 | Virtua Tennis / Power Smash | NAOMI |
 | Virtua Tennis 2 / Power Smash 2 | SEGA DREAMCAST |
