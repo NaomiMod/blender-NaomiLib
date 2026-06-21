@@ -1369,7 +1369,7 @@ def parse_nl2(nl_bytes: bytes, orientation: str, NegScale_X: bool,
             for strip in strips:
                 n = len(strip)
                 pts  = [(v[0], v[1], v[2]) for v in strip]
-                uvs  = [(v[3], 1.0 + v[4]) for v in strip]  # U as-is; V: 1+v_stored so data2blender's 1-y = v_original
+                uvs  = [(v[3], v[4]) for v in strip]
                 cols = [v[6] for v in strip] if has_rgb else None
                 # Always use the packed normal from flag_word.
                 nrms = [v[7] for v in strip]
@@ -1735,7 +1735,6 @@ def data2blender(mesh_vertex: list, mesh_uvs: list, faces: list, meshes: list, m
         new_mesh.from_pydata(mesh_vertex[i], list(), faces[i])
         # new_mesh.validate(verbose=True)
 
-        # UV: hardware V is stored negated by exporter; blender_v = 1 - raw_v = uv[1]
         _nl_uv_map = {}
         for p, polygon in enumerate(new_mesh.polygons):
             for l, index in enumerate(polygon.loop_indices):
