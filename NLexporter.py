@@ -2472,6 +2472,7 @@ def naomi_format_type_2_7_main_setmat(
     if stdmat.tex_id >= 0 or (tex == 1 and not tex_err):
         if output_after_all:
             sas.mc[v2para].texture_flag = 1
+            sas.mc[v2para].tex_id = stdmat.tex_id
 
         if v2para == 0 and not output_after_all:
             mat_printf("  TexID_%03d,\t/* tex_pvf_index */\n\n",
