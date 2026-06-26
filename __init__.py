@@ -3,7 +3,7 @@ bl_info = {
     "author" : "zocker_160, VincentNL, TVIndustries",
     "description" : "Addon for importing / exporting NaomiLib .bin files",
     "blender" : (5, 1, 0),
-    "version" : (1, 0, 3),
+    "version" : (1, 0, 4),
     "location" : "File > Import / Export",
     "warning" : "",
     "category": "Import-Export",
@@ -1135,6 +1135,7 @@ _QS_TSP_MAP = {
     'qs_tex_alpha':    'alphaTexOp',
     'qs_color_clamp':  'colorClamp',
     'qs_uv_clamp':     'uvClamp',
+    'qs_uv_flip':      'uvFlip',
     'qs_filter':       'filter',
     'qs_src_alpha':    'srcAlpha',
     'qs_dst_alpha':    'dstAlpha',
@@ -1933,6 +1934,13 @@ class Naomi_Param_Properties(bpy.types.PropertyGroup):
                ('2', "Clamp X", ""), ('3', "Clamp X,Y", "")],
         default='-1',
         update=_qs_update('qs_uv_clamp'),
+    )
+    qs_uv_flip: bpy.props.EnumProperty(
+        name="U/V Flip", description="Override UV flipping (AUTO = use preset default)",
+        items=[('-1', "AUTO", "Use the preset default"), ('0', "No Flipping", ""),
+               ('1', "Flip Y", ""), ('2', "Flip X", ""), ('3', "Flip X,Y", "")],
+        default='-1',
+        update=_qs_update('qs_uv_flip'),
     )
     qs_filter: bpy.props.EnumProperty(
         name="Filter Mode", description="Override texture filter (AUTO = use preset default)",
@@ -3780,6 +3788,10 @@ class OBJECT_PT_Naomi_Properties(bpy.types.Panel):
         row = box.row()
         row.label(text="U/V Clamp:")
         row.prop(naomi_param_p, "qs_uv_clamp", text="")
+
+        row = box.row()
+        row.label(text="U/V Flip:")
+        row.prop(naomi_param_p, "qs_uv_flip", text="")
 
         row = box.row()
         row.label(text="Filter Mode:")
